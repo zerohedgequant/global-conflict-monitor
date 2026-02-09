@@ -1,33 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>Global Conflict Monitor - ZerohedgeQuantbyShrey</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Courier New',monospace;background:#0a1520;color:#e0e8f0;overflow:hidden}
+body{font-family:monospace;background:#0a1520;color:#e0e8f0;overflow:hidden}
 .container{display:flex;flex-direction:column;height:100vh}
 header{padding:12px 24px;background:rgba(10,25,40,0.95);border-bottom:1px solid #1a3a4a;display:flex;justify-content:space-between;align-items:center}
 h1{font-size:18px;background:linear-gradient(90deg,#00aaff,#00ffaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:240px;background:rgba(10,20,35,0.95);border-right:1px solid #1a3a4a;padding:12px}
-.sidebar-right{border-right:none;border-left:1px solid #1a3a4a}
-.sidebar h3{font-size:11px;color:#5a8a9a;margin-bottom:12px;letter-spacing:2px}
-.map-area{flex:1;position:relative}
-svg{width:100%;height:100%}
-.update{padding:10px;margin-bottom:6px;background:rgba(30,50,70,0.5);border-radius:6px;font-size:11px;cursor:pointer}
-.update:first-child{background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3)}
+.sidebar{width:260px;background:rgba(10,20,35,0.95);border-right:1px solid #1a3a4a;display:flex;flex-direction:column}
+.sidebar-right{width:220px;border-right:none;border-left:1px solid #1a3a4a}
+.sidebar-header{padding:12px;border-bottom:1px solid #1a3a4a;font-size:11px;color:#5a8a9a;letter-spacing:2px}
+.sidebar-content{flex:1;overflow:auto;padding:8px}
+.map-area{flex:1;position:relative;background:#0a1520}
+svg{width:100%;height:100%;display:block}
+.update{padding:10px;margin-bottom:6px;background:rgba(30,50,70,0.5);border-radius:6px;font-size:11px;border:1px solid transparent}
+.update.latest{background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4)}
 .trend{padding:10px;margin-bottom:4px;border-radius:6px;cursor:pointer;border-left:2px solid transparent}
 .trend:hover{background:rgba(29,161,242,0.1);border-left-color:#1da1f2}
-.legend{margin-top:auto;padding-top:12px;border-top:1px solid #1a3a4a}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:10px;margin-bottom:6px}
+.legend{padding:12px;border-top:1px solid #1a3a4a;margin-top:auto}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:10px;margin-bottom:6px;color:#8aa8b8}
 .dot{width:10px;height:10px;border-radius:50%}
-.credit{position:absolute;bottom:16px;right:16px;font-size:10px;color:#4a6a7a;background:rgba(10,25,40,0.9);padding:6px 12px;border-radius:4px}
+.credit{position:absolute;bottom:16px;right:16px;font-size:10px;color:#4a6a7a;background:rgba(10,25,40,0.9);padding:6px 12px;border-radius:4px;border:1px solid #1a3a4a}
 .credit a{color:#00aaff;text-decoration:none}
 .live{color:#00ff88;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.filters{position:absolute;top:16px;left:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a}
-.filter-btn{display:block;padding:6px 10px;margin-bottom:4px;background:transparent;border:1px solid #2a4a5a;border-radius:4px;color:#6a8a9a;font-size:10px;cursor:pointer;text-align:left;width:100%}
+.filters{position:absolute;top:16px;left:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a;z-index:100}
+.filter-btn{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;background:transparent;border:1px solid #2a4a5a;border-radius:4px;color:#6a8a9a;font-size:10px;cursor:pointer;text-align:left;width:100%}
 .filter-btn:hover,.filter-btn.active{background:rgba(0,170,255,0.2);border-color:#00aaff;color:#00aaff}
+.color-bar{width:20px;height:3px;border-radius:2px}
+.stats{position:absolute;top:16px;right:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a;font-size:11px}
+.stat-row{display:flex;justify-content:space-between;margin-bottom:6px}
+.stat-label{color:#5a8a9a}
+.stat-value{color:#00ffaa;font-weight:bold}
 </style>
 </head>
 <body>
@@ -36,149 +43,271 @@ svg{width:100%;height:100%}
 <div style="display:flex;align-items:center;gap:16px">
 <span class="live">●</span>
 <h1>GLOBAL CONFLICT MONITOR</h1>
-<span style="font-size:10px;color:#5a7a8a;padding:2px 8px;background:rgba(0,255,136,0.1);border-radius:4px">LIVE</span>
+<span style="font-size:10px;color:#00ff88;padding:2px 8px;background:rgba(0,255,136,0.1);border-radius:4px;border:1px solid rgba(0,255,136,0.3)">LIVE</span>
 </div>
 <div style="font-size:11px;color:#5a8a9a">
-<span id="clock"></span> | ACTIVE: 14 | TENSION: 6
+<span id="clock">UTC: --:--:--</span>
 </div>
 </header>
 <div class="main">
 <div class="sidebar">
-<h3>🔴 LIVE FEED</h3>
-<div id="updates"></div>
+<div class="sidebar-header">[!] LIVE FEED</div>
+<div class="sidebar-content" id="updates"></div>
 </div>
 <div class="map-area">
 <div class="filters">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:8px">CONNECTIONS</div>
-<button class="filter-btn active" onclick="setFilter('all')">◈ ALL</button>
-<button class="filter-btn" onclick="setFilter('proxy')">🔴 PROXY WARS</button>
-<button class="filter-btn" onclick="setFilter('arms')">🟠 ARMS FLOWS</button>
-<button class="filter-btn" onclick="setFilter('alliance')">🟢 ALLIANCES</button>
-<button class="filter-btn" onclick="setFilter('cyber')">🟡 CYBER LINKS</button>
-<button class="filter-btn" onclick="setFilter('spillover')">🟣 SPILLOVER</button>
+<div style="font-size:10px;color:#5a8a9a;margin-bottom:10px;letter-spacing:1px">CONNECTION TYPES</div>
+<button class="filter-btn active" data-filter="all"><span class="color-bar" style="background:linear-gradient(90deg,#ff4444,#44ff44)"></span>ALL CONNECTIONS</button>
+<button class="filter-btn" data-filter="proxy"><span class="color-bar" style="background:#ff4444"></span>PROXY WARS</button>
+<button class="filter-btn" data-filter="arms"><span class="color-bar" style="background:#ff8800"></span>ARMS FLOWS</button>
+<button class="filter-btn" data-filter="alliance"><span class="color-bar" style="background:#44ff44"></span>ALLIANCES</button>
+<button class="filter-btn" data-filter="cyber"><span class="color-bar" style="background:#ffff00"></span>CYBER LINKS</button>
+<button class="filter-btn" data-filter="spillover"><span class="color-bar" style="background:#aa44ff"></span>SPILLOVER</button>
+<button class="filter-btn" data-filter="naval"><span class="color-bar" style="background:#00cccc"></span>NAVAL ROUTES</button>
 </div>
-<svg id="map" viewBox="0 0 1000 500"></svg>
+<div class="stats">
+<div class="stat-row"><span class="stat-label">ACTIVE CONFLICTS:</span><span class="stat-value" id="active-count">0</span></div>
+<div class="stat-row"><span class="stat-label">TENSION ZONES:</span><span class="stat-value" style="color:#ffaa00" id="tension-count">0</span></div>
+<div class="stat-row"><span class="stat-label">CONNECTIONS:</span><span class="stat-value" id="conn-count">0</span></div>
+<div class="stat-row"><span class="stat-label">LAST UPDATE:</span><span class="stat-value" id="last-update">--:--:--</span></div>
+</div>
+<svg id="map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
 <div class="credit">Made by <a href="https://github.com/ZerohedgeQuantbyShrey" target="_blank">ZerohedgeQuantbyShrey</a></div>
 </div>
 <div class="sidebar sidebar-right">
-<h3>𝕏 TRENDING</h3>
-<div id="trends"></div>
+<div class="sidebar-header">X TRENDING</div>
+<div class="sidebar-content" id="trends"></div>
 <div class="legend">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:8px">LEGEND</div>
-<div class="legend-item"><span class="dot" style="background:#ff3333;box-shadow:0 0 6px #ff3333"></span>Active Conflict</div>
-<div class="legend-item"><span class="dot" style="background:#ffaa00;box-shadow:0 0 6px #ffaa00"></span>Tension Zone</div>
-<div class="legend-item"><span class="dot" style="background:#6688ff;box-shadow:0 0 6px #6688ff"></span>Frozen Conflict</div>
+<div style="font-size:10px;color:#5a8a9a;margin-bottom:10px;letter-spacing:1px">CONFLICT STATUS</div>
+<div class="legend-item"><span class="dot" style="background:#ff3333;box-shadow:0 0 8px #ff3333"></span>Active Conflict</div>
+<div class="legend-item"><span class="dot" style="background:#ffaa00;box-shadow:0 0 8px #ffaa00"></span>Tension Zone</div>
+<div class="legend-item"><span class="dot" style="background:#6688ff;box-shadow:0 0 8px #6688ff"></span>Frozen Conflict</div>
 </div>
 </div>
 </div>
 </div>
 <script>
-const conflicts=[{id:1,name:"Ukraine-Russia",lat:48.38,lng:31.17,intensity:5,type:"active"},{id:2,name:"Gaza",lat:31.35,lng:34.31,intensity:5,type:"active"},{id:3,name:"Sudan",lat:15.50,lng:32.56,intensity:4,type:"active"},{id:4,name:"Yemen",lat:15.55,lng:48.52,intensity:4,type:"active"},{id:5,name:"Syria",lat:34.80,lng:38.99,intensity:3,type:"active"},{id:6,name:"Taiwan",lat:23.70,lng:120.96,intensity:2,type:"tension"},{id:7,name:"South China Sea",lat:12.88,lng:121.77,intensity:2,type:"tension"},{id:8,name:"Korea",lat:38.0,lng:127.5,intensity:2,type:"tension"},{id:9,name:"Iran",lat:32.43,lng:53.69,intensity:3,type:"tension"},{id:10,name:"Ethiopia",lat:9.15,lng:40.49,intensity:3,type:"active"},{id:11,name:"Myanmar",lat:21.92,lng:95.96,intensity:4,type:"active"},{id:12,name:"Sahel",lat:14.50,lng:0.15,intensity:4,type:"active"},{id:13,name:"Nagorno-Karabakh",lat:40.07,lng:45.04,intensity:2,type:"frozen"},{id:14,name:"DR Congo",lat:-4.04,lng:21.76,intensity:4,type:"active"},{id:15,name:"Somalia",lat:5.15,lng:46.20,intensity:3,type:"active"},{id:16,name:"Libya",lat:26.34,lng:17.23,intensity:3,type:"active"},{id:17,name:"Afghanistan",lat:33.94,lng:67.71,intensity:3,type:"active"},{id:18,name:"Kashmir",lat:33.73,lng:73.09,intensity:2,type:"tension"},{id:21,name:"Red Sea",lat:15.55,lng:42.52,intensity:4,type:"active"},{id:22,name:"Lebanon",lat:33.85,lng:35.86,intensity:4,type:"active"}];
-const connections=[{from:1,to:9,type:"proxy"},{from:2,to:9,type:"proxy"},{from:2,to:22,type:"spillover"},{from:2,to:21,type:"proxy"},{from:4,to:9,type:"proxy"},{from:5,to:9,type:"proxy"},{from:6,to:7,type:"alliance"},{from:6,to:8,type:"cyber"},{from:9,to:21,type:"arms"},{from:9,to:22,type:"arms"},{from:3,to:14,type:"arms"},{from:12,to:16,type:"spillover"},{from:1,to:12,type:"proxy"},{from:17,to:18,type:"spillover"},{from:1,to:6,type:"cyber"},{from:7,to:8,type:"alliance"},{from:15,to:21,type:"alliance"},{from:3,to:10,type:"spillover"}];
-const connColors={proxy:"#ff4444",supply:"#44aaff",naval:"#00cccc",arms:"#ff8800",alliance:"#44ff44",spillover:"#aa44ff",cyber:"#ffff00"};
-const trends=[{t:"#UkraineWar",c:"2.4M"},{t:"#GazaCeasefire",c:"1.8M"},{t:"#RedSeaCrisis",c:"890K"},{t:"#TaiwanChina",c:"650K"},{t:"#SudanConflict",c:"420K"},{t:"#NATO",c:"380K"},{t:"#IranProxy",c:"290K"}];
-const toXY=(lat,lng)=>({x:((lng+180)/360)*1000,y:((90-lat)/180)*500});
-const svg=document.getElementById('map');
-let filter='all';
+var conflicts=[
+{id:1,name:"Ukraine-Russia",lat:48.38,lng:31.17,intensity:5,type:"active",region:"Europe"},
+{id:2,name:"Gaza",lat:31.35,lng:34.31,intensity:5,type:"active",region:"Middle East"},
+{id:3,name:"Sudan",lat:15.50,lng:32.56,intensity:4,type:"active",region:"Africa"},
+{id:4,name:"Yemen",lat:15.55,lng:48.52,intensity:4,type:"active",region:"Middle East"},
+{id:5,name:"Syria",lat:34.80,lng:38.99,intensity:3,type:"active",region:"Middle East"},
+{id:6,name:"Taiwan Strait",lat:23.70,lng:120.96,intensity:2,type:"tension",region:"Asia"},
+{id:7,name:"South China Sea",lat:12.88,lng:121.77,intensity:2,type:"tension",region:"Asia"},
+{id:8,name:"Korean Peninsula",lat:38.0,lng:127.5,intensity:2,type:"tension",region:"Asia"},
+{id:9,name:"Iran",lat:32.43,lng:53.69,intensity:3,type:"tension",region:"Middle East"},
+{id:10,name:"Ethiopia",lat:9.15,lng:40.49,intensity:3,type:"active",region:"Africa"},
+{id:11,name:"Myanmar",lat:21.92,lng:95.96,intensity:4,type:"active",region:"Asia"},
+{id:12,name:"Sahel",lat:14.50,lng:0.15,intensity:4,type:"active",region:"Africa"},
+{id:13,name:"Armenia-Azerbaijan",lat:40.07,lng:45.04,intensity:2,type:"frozen",region:"Caucasus"},
+{id:14,name:"DR Congo",lat:-4.04,lng:21.76,intensity:4,type:"active",region:"Africa"},
+{id:15,name:"Somalia",lat:5.15,lng:46.20,intensity:3,type:"active",region:"Africa"},
+{id:16,name:"Libya",lat:26.34,lng:17.23,intensity:3,type:"active",region:"Africa"},
+{id:17,name:"Afghanistan",lat:33.94,lng:67.71,intensity:3,type:"active",region:"Asia"},
+{id:18,name:"Kashmir",lat:33.73,lng:73.09,intensity:2,type:"tension",region:"Asia"},
+{id:19,name:"Venezuela",lat:6.42,lng:-66.59,intensity:2,type:"tension",region:"Americas"},
+{id:20,name:"Haiti",lat:18.97,lng:-72.29,intensity:3,type:"active",region:"Americas"},
+{id:21,name:"Red Sea/Houthis",lat:15.55,lng:42.52,intensity:4,type:"active",region:"Middle East"},
+{id:22,name:"Lebanon",lat:33.85,lng:35.86,intensity:4,type:"active",region:"Middle East"}
+];
+
+var connections=[
+{from:1,to:9,type:"proxy",label:"Drone Supply"},
+{from:1,to:8,type:"alliance",label:"NATO Support"},
+{from:2,to:9,type:"proxy",label:"Hamas Support"},
+{from:2,to:22,type:"spillover",label:"Hezbollah Link"},
+{from:2,to:21,type:"proxy",label:"Houthi Attacks"},
+{from:4,to:9,type:"proxy",label:"Iran Backing"},
+{from:4,to:21,type:"alliance",label:"Houthi Coalition"},
+{from:5,to:9,type:"proxy",label:"Assad Support"},
+{from:5,to:1,type:"alliance",label:"Russia Alliance"},
+{from:6,to:7,type:"alliance",label:"China Claims"},
+{from:6,to:8,type:"cyber",label:"Cyber Ops"},
+{from:7,to:8,type:"naval",label:"Naval Presence"},
+{from:9,to:21,type:"arms",label:"Arms Flow"},
+{from:9,to:22,type:"arms",label:"Weapons Transfer"},
+{from:3,to:10,type:"spillover",label:"Refugee Crisis"},
+{from:3,to:14,type:"arms",label:"Mercenary Flow"},
+{from:12,to:16,type:"spillover",label:"Extremism"},
+{from:12,to:14,type:"arms",label:"Wagner Group"},
+{from:1,to:12,type:"proxy",label:"Wagner Ops"},
+{from:15,to:21,type:"alliance",label:"Al-Shabaab"},
+{from:17,to:18,type:"spillover",label:"Taliban Border"},
+{from:11,to:6,type:"arms",label:"Rare Earth"},
+{from:1,to:6,type:"cyber",label:"Info War"},
+{from:9,to:19,type:"alliance",label:"Oil Trade"},
+{from:14,to:10,type:"arms",label:"Resources"},
+{from:16,to:12,type:"arms",label:"Weapons Flow"},
+{from:20,to:19,type:"spillover",label:"Migration"}
+];
+
+var connColors={proxy:"#ff4444",arms:"#ff8800",alliance:"#44ff44",spillover:"#aa44ff",cyber:"#ffff00",naval:"#00cccc"};
+
+var trends=[
+{t:"#UkraineWar",c:"2.4M",ids:[1]},
+{t:"#GazaCeasefire",c:"1.8M",ids:[2,22]},
+{t:"#RedSeaCrisis",c:"890K",ids:[21,4]},
+{t:"#TaiwanChina",c:"650K",ids:[6,7]},
+{t:"#SudanConflict",c:"420K",ids:[3]},
+{t:"#NATO",c:"380K",ids:[1,8]},
+{t:"#IranProxy",c:"290K",ids:[9,4,21]},
+{t:"#MyanmarCrisis",c:"180K",ids:[11]},
+{t:"#Sahel",c:"145K",ids:[12]},
+{t:"#NorthKorea",c:"230K",ids:[8]}
+];
+
+var filter="all";
+var svg=document.getElementById("map");
+
+function toXY(lat,lng){return{x:((lng+180)/360)*1000,y:((90-lat)/180)*500}}
+
+function getById(id){return conflicts.find(function(c){return c.id===id})}
 
 function draw(){
-svg.innerHTML='';
-for(let i=0;i<=18;i++){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',0);l.setAttribute('y1',(500/18)*i);l.setAttribute('x2',1000);l.setAttribute('y2',(500/18)*i);l.setAttribute('stroke','#1a3a4a');l.setAttribute('stroke-width','0.5');svg.appendChild(l)}
-for(let i=0;i<=36;i++){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',(1000/36)*i);l.setAttribute('y1',0);l.setAttribute('x2',(1000/36)*i);l.setAttribute('y2',500);l.setAttribute('stroke','#1a3a4a');l.setAttribute('stroke-width','0.5');svg.appendChild(l)}
-connections.forEach(c=>{if(filter!=='all'&&c.type!==filter)return;const f=conflicts.find(x=>x.id===c.from),t=conflicts.find(x=>x.id===c.to);if(!f||!t)return;const s=toXY(f.lat,f.lng),e=toXY(t.lat,t.lng);const p=document.createElementNS('http://www.w3.org/2000/svg','path');const mx=(s.x
-open ~/Desktop/conflict-monitor.html
+  svg.innerHTML="";
+  
+  // Grid
+  for(var i=0;i<=18;i++){
+    var l=document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",0);l.setAttribute("y1",(500/18)*i);
+    l.setAttribute("x2",1000);l.setAttribute("y2",(500/18)*i);
+    l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");
+    svg.appendChild(l);
+  }
+  for(var i=0;i<=36;i++){
+    var l=document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",(1000/36)*i);l.setAttribute("y1",0);
+    l.setAttribute("x2",(1000/36)*i);l.setAttribute("y2",500);
+    l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");
+    svg.appendChild(l);
+  }
+  
+  // Connections
+  var connCount=0;
+  connections.forEach(function(c){
+    if(filter!=="all" && c.type!==filter)return;
+    var f=getById(c.from),t=getById(c.to);
+    if(!f||!t)return;
+    connCount++;
+    var s=toXY(f.lat,f.lng),e=toXY(t.lat,t.lng);
+    var mx=(s.x+e.x)/2,my=(s.y+e.y)/2-30;
+    var p=document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d","M"+s.x+" "+s.y+" Q"+mx+" "+my+" "+e.x+" "+e.y);
+    p.setAttribute("fill","none");
+    p.setAttribute("stroke",connColors[c.type]||"#888");
+    p.setAttribute("stroke-width","2");
+    p.setAttribute("stroke-dasharray","8,4");
+    p.setAttribute("stroke-linecap","round");
+    p.style.filter="drop-shadow(0 0 4px "+connColors[c.type]+")";
+    var a=document.createElementNS("http://www.w3.org/2000/svg","animate");
+    a.setAttribute("attributeName","stroke-dashoffset");
+    a.setAttribute("from","100");a.setAttribute("to","0");
+    a.setAttribute("dur","2s");a.setAttribute("repeatCount","indefinite");
+    p.appendChild(a);
+    svg.appendChild(p);
+  });
+  document.getElementById("conn-count").textContent=connCount;
+  
+  // Markers
+  var activeCount=0,tensionCount=0;
+  conflicts.forEach(function(c){
+    if(c.type==="active")activeCount++;
+    if(c.type==="tension")tensionCount++;
+    var pos=toXY(c.lat,c.lng);
+    var r=4+c.intensity*2;
+    var col=c.type==="active"?"#ff3333":c.type==="tension"?"#ffaa00":"#6688ff";
+    
+    // Pulse
+    var pulse=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    pulse.setAttribute("cx",pos.x);pulse.setAttribute("cy",pos.y);
+    pulse.setAttribute("r",r);pulse.setAttribute("fill",col);pulse.setAttribute("opacity","0.3");
+    var a1=document.createElementNS("http://www.w3.org/2000/svg","animate");
+    a1.setAttribute("attributeName","r");a1.setAttribute("from",r);a1.setAttribute("to",r+20);
+    a1.setAttribute("dur","1.5s");a1.setAttribute("repeatCount","indefinite");
+    pulse.appendChild(a1);
+    var a2=document.createElementNS("http://www.w3.org/2000/svg","animate");
+    a2.setAttribute("attributeName","opacity");a2.setAttribute("from","0.5");a2.setAttribute("to","0");
+    a2.setAttribute("dur","1.5s");a2.setAttribute("repeatCount","indefinite");
+    pulse.appendChild(a2);
+    svg.appendChild(pulse);
+    
+    // Dot
+    var dot=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    dot.setAttribute("cx",pos.x);dot.setAttribute("cy",pos.y);
+    dot.setAttribute("r",r);dot.setAttribute("fill",col);
+    dot.style.filter="drop-shadow(0 0 8px "+col+")";
+    dot.style.cursor="pointer";
+    dot.onclick=function(){alert(c.name+"\nRegion: "+c.region+"\nIntensity: "+"*".repeat(c.intensity)+"\nStatus: "+c.type.toUpperCase())};
+    svg.appendChild(dot);
+    
+    // Label
+    var txt=document.createElementNS("http://www.w3.org/2000/svg","text");
+    txt.setAttribute("x",pos.x);txt.setAttribute("y",pos.y-r-6);
+    txt.setAttribute("text-anchor","middle");txt.setAttribute("fill","#fff");
+    txt.setAttribute("font-size","9");txt.setAttribute("font-family","monospace");
+    txt.style.textShadow="0 0 4px #000,0 0 8px #000";
+    txt.textContent=c.name;
+    svg.appendChild(txt);
+  });
+  
+  document.getElementById("active-count").textContent=activeCount;
+  document.getElementById("tension-count").textContent=tensionCount;
+}
 
+// Filter buttons
+document.querySelectorAll(".filter-btn").forEach(function(btn){
+  btn.onclick=function(){
+    document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    filter=btn.getAttribute("data-filter");
+    draw();
+  }
+});
 
-cat > ~/Desktop/conflict-monitor.html << 'HTMLEOF'
-<!DOCTYPE html>
-<html>
-<head>
-<title>Global Conflict Monitor - ZerohedgeQuantbyShrey</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Courier New',monospace;background:#0a1520;color:#e0e8f0;overflow:hidden}
-.container{display:flex;flex-direction:column;height:100vh}
-header{padding:12px 24px;background:rgba(10,25,40,0.95);border-bottom:1px solid #1a3a4a;display:flex;justify-content:space-between;align-items:center}
-h1{font-size:18px;background:linear-gradient(90deg,#00aaff,#00ffaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:240px;background:rgba(10,20,35,0.95);border-right:1px solid #1a3a4a;padding:12px}
-.sidebar-right{border-right:none;border-left:1px solid #1a3a4a}
-.sidebar h3{font-size:11px;color:#5a8a9a;margin-bottom:12px;letter-spacing:2px}
-.map-area{flex:1;position:relative}
-svg{width:100%;height:100%}
-.update{padding:10px;margin-bottom:6px;background:rgba(30,50,70,0.5);border-radius:6px;font-size:11px}
-.update:first-child{background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3)}
-.trend{padding:10px;margin-bottom:4px;border-radius:6px;cursor:pointer;border-left:2px solid transparent}
-.trend:hover{background:rgba(29,161,242,0.1);border-left-color:#1da1f2}
-.legend{margin-top:auto;padding-top:12px;border-top:1px solid #1a3a4a}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:10px;margin-bottom:6px}
-.dot{width:10px;height:10px;border-radius:50%}
-.credit{position:absolute;bottom:16px;right:16px;font-size:10px;color:#4a6a7a;background:rgba(10,25,40,0.9);padding:6px 12px;border-radius:4px}
-.credit a{color:#00aaff;text-decoration:none}
-.live{color:#00ff88;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.filters{position:absolute;top:16px;left:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a}
-.filter-btn{display:block;padding:6px 10px;margin-bottom:4px;background:transparent;border:1px solid #2a4a5a;border-radius:4px;color:#6a8a9a;font-size:10px;cursor:pointer;text-align:left;width:100%}
-.filter-btn:hover,.filter-btn.active{background:rgba(0,170,255,0.2);border-color:#00aaff;color:#00aaff}
-</style>
-</head>
-<body>
-<div class="container">
-<header>
-<div style="display:flex;align-items:center;gap:16px">
-<span class="live">●</span>
-<h1>GLOBAL CONFLICT MONITOR</h1>
-<span style="font-size:10px;color:#5a7a8a;padding:2px 8px;background:rgba(0,255,136,0.1);border-radius:4px">LIVE</span>
-</div>
-<div style="font-size:11px;color:#5a8a9a">
-<span id="clock"></span> | ACTIVE: 14 | TENSION: 6
-</div>
-</header>
-<div class="main">
-<div class="sidebar">
-<h3>🔴 LIVE FEED</h3>
-<div id="updates"></div>
-</div>
-<div class="map-area">
-<div class="filters">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:8px">CONNECTIONS</div>
-<button class="filter-btn active" onclick="setFilter('all')">◈ ALL</button>
-<button class="filter-btn" onclick="setFilter('proxy')">🔴 PROXY WARS</button>
-<button class="filter-btn" onclick="setFilter('arms')">🟠 ARMS FLOWS</button>
-<button class="filter-btn" onclick="setFilter('alliance')">🟢 ALLIANCES</button>
-<button class="filter-btn" onclick="setFilter('cyber')">🟡 CYBER LINKS</button>
-<button class="filter-btn" onclick="setFilter('spillover')">🟣 SPILLOVER</button>
-</div>
-<svg id="map" viewBox="0 0 1000 500"></svg>
-<div class="credit">Made by <a href="https://github.com/ZerohedgeQuantbyShrey" target="_blank">ZerohedgeQuantbyShrey</a></div>
-</div>
-<div class="sidebar sidebar-right">
-<h3>𝕏 TRENDING</h3>
-<div id="trends"></div>
-<div class="legend">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:8px">LEGEND</div>
-<div class="legend-item"><span class="dot" style="background:#ff3333;box-shadow:0 0 6px #ff3333"></span>Active</div>
-<div class="legend-item"><span class="dot" style="background:#ffaa00;box-shadow:0 0 6px #ffaa00"></span>Tension</div>
-<div class="legend-item"><span class="dot" style="background:#6688ff;box-shadow:0 0 6px #6688ff"></span>Frozen</div>
-</div>
-</div>
-</div>
-</div>
-<script>
-const conflicts=[{id:1,name:"Ukraine-Russia",lat:48.38,lng:31.17,intensity:5,type:"active"},{id:2,name:"Gaza",lat:31.35,lng:34.31,intensity:5,type:"active"},{id:3,name:"Sudan",lat:15.50,lng:32.56,intensity:4,type:"active"},{id:4,name:"Yemen",lat:15.55,lng:48.52,intensity:4,type:"active"},{id:5,name:"Syria",lat:34.80,lng:38.99,intensity:3,type:"active"},{id:6,name:"Taiwan",lat:23.70,lng:120.96,intensity:2,type:"tension"},{id:7,name:"South China Sea",lat:12.88,lng:121.77,intensity:2,type:"tension"},{id:8,name:"Korea",lat:38.0,lng:127.5,intensity:2,type:"tension"},{id:9,name:"Iran",lat:32.43,lng:53.69,intensity:3,type:"tension"},{id:10,name:"Ethiopia",lat:9.15,lng:40.49,intensity:3,type:"active"},{id:11,name:"Myanmar",lat:21.92,lng:95.96,intensity:4,type:"active"},{id:12,name:"Sahel",lat:14.50,lng:0.15,intensity:4,type:"active"},{id:13,name:"Nagorno-Karabakh",lat:40.07,lng:45.04,intensity:2,type:"frozen"},{id:14,name:"DR Congo",lat:-4.04,lng:21.76,intensity:4,type:"active"},{id:15,name:"Somalia",lat:5.15,lng:46.20,intensity:3,type:"active"},{id:16,name:"Libya",lat:26.34,lng:17.23,intensity:3,type:"active"},{id:17,name:"Afghanistan",lat:33.94,lng:67.71,intensity:3,type:"active"},{id:18,name:"Kashmir",lat:33.73,lng:73.09,intensity:2,type:"tension"},{id:21,name:"Red Sea",lat:15.55,lng:42.52,intensity:4,type:"active"},{id:22,name:"Lebanon",lat:33.85,lng:35.86,intensity:4,type:"active"}];
-const connections=[{from:1,to:9,type:"proxy"},{from:2,to:9,type:"proxy"},{from:2,to:22,type:"spillover"},{from:2,to:21,type:"proxy"},{from:4,to:9,type:"proxy"},{from:5,to:9,type:"proxy"},{from:6,to:7,type:"alliance"},{from:6,to:8,type:"cyber"},{from:9,to:21,type:"arms"},{from:9,to:22,type:"arms"},{from:3,to:14,type:"arms"},{from:12,to:16,type:"spillover"},{from:1,to:12,type:"proxy"},{from:17,to:18,type:"spillover"},{from:1,to:6,type:"cyber"},{from:7,to:8,type:"alliance"},{from:15,to:21,type:"alliance"},{from:3,to:10,type:"spillover"}];
-const connColors={proxy:"#ff4444",arms:"#ff8800",alliance:"#44ff44",spillover:"#aa44ff",cyber:"#ffff00"};
-const trends=[{t:"#UkraineWar",c:"2.4M"},{t:"#GazaCeasefire",c:"1.8M"},{t:"#RedSeaCrisis",c:"890K"},{t:"#TaiwanChina",c:"650K"},{t:"#SudanConflict",c:"420K"},{t:"#NATO",c:"380K"},{t:"#IranProxy",c:"290K"}];
-const toXY=(lat,lng)=>({x:((lng+180)/360)*1000,y:((90-lat)/180)*500});
-const svg=document.getElementById("map");
-let filter="all";
-function draw(){svg.innerHTML="";for(let i=0;i<=18;i++){const l=document.createElementNS("http://www.w3.org/2000/svg","line");l.setAttribute("x1",0);l.setAttribute("y1",(500/18)*i);l.setAttribute("x2",1000);l.setAttribute("y2",(500/18)*i);l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");svg.appendChild(l)}for(let i=0;i<=36;i++){const l=document.createElementNS("http://www.w3.org/2000/svg","line");l.setAttribute("x1",(1000/36)*i);l.setAttribute("y1",0);l.setAttribute("x2",(1000/36)*i);l.setAttribute("y2",500);l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");svg.appendChild(l)}connections.forEach(c=>{if(filter!=="all"&&c.type!==filter)return;const f=conflicts.find(x=>x.id===c.from),t=conflicts.find(x=>x.id===c.to);if(!f||!t)return;const s=toXY(f.lat,f.lng),e=toXY(t.lat,t.lng);const p=document.createElementNS("http://www.w3.org/2000/svg","path");const mx=(s.x+e.x)/2,my=(s.y+e.y)/2-30;p.setAttribute("d","M"+s.x+" "+s.y+" Q"+mx+" "+my+" "+e.x+" "+e.y);p.setAttribute("fill","none");p.setAttribute("stroke",connColors[c.type]);p.setAttribute("stroke-width","2");p.setAttribute("stroke-dasharray","8,4");p.style.filter="drop-shadow(0 0 4px "+connColors[c.type]+")";const a=document.createElementNS("http://www.w3.org/2000/svg","animate");a.setAttribute("attributeName","stroke-dashoffset");a.setAttribute("from","100");a.setAttribute("to","0");a.setAttribute("dur","2s");a.setAttribute("repeatCount","indefinite");p.appendChild(a);svg.appendChild(p)});conflicts.forEach(c=>{const pos=toXY(c.lat,c.lng);const r=4+c.intensity*2;const col=c.type==="active"?"#ff3333":c.type==="tension"?"#ffaa00":"#6688ff";const pulse=document.createElementNS("http://www.w3.org/2000/svg","circle");pulse.setAttribute("cx",pos.x);pulse.setAttribute("cy",pos.y);pulse.setAttribute("r",r);pulse.setAttribute("fill",col);pulse.setAttribute("opacity","0.3");const a1=document.createElementNS("http://www.w3.org/2000/svg","animate");a1.setAttribute("attributeName","r");a1.setAttribute("from",r);a1.setAttribute("to",r+15);a1.setAttribute("dur","1.5s");a1.setAttribute("repeatCount","indefinite");pulse.appendChild(a1);const a2=document.createElementNS("http://www.w3.org/2000/svg","animate");a2.setAttribute("attributeName","opacity");a2.setAttribute("from","0.4");a2.setAttribute("to","0");a2.setAttribute("dur","1.5s");a2.setAttribute("repeatCount","indefinite");pulse.appendChild(a2);svg.appendChild(pulse);const dot=document.createElementNS("http://www.w3.org/2000/svg","circle");dot.setAttribute("cx",pos.x);dot.setAttribute("cy",pos.y);dot.setAttribute("r",r);dot.setAttribute("fill",col);dot.style.filter="drop-shadow(0 0 6px "+col+")";dot.style.cursor="pointer";dot.onclick=()=>alert(c.name+"\nIntensity: "+"●".repeat(c.intensity)+"\nStatus: "+c.type);svg.appendChild(dot);const txt=document.createElementNS("http://www.w3.org/2000/svg","text");txt.setAttribute("x",pos.x);txt.setAttribute("y",pos.y-r-8);txt.setAttribute("text-anchor","middle");txt.setAttribute("fill","#fff");txt.setAttribute("font-size","9");txt.textContent=c.name;svg.appendChild(txt)})}
-function setFilter(f){filter=f;document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));event.target.classList.add("active");draw()}
-const types=["🔴 BREAKING:","⚡ ALERT:","📡 INTEL:","🚢 NAVAL:","💻 CYBER:"];
-function addUpdate(){const c=conflicts[Math.floor(Math.random()*conflicts.length)];const t=types[Math.floor(Math.random()*types.length)];const d=document.getElementById("updates");const div=document.createElement("div");div.className="update";div.innerHTML=t+" Activity in "+c.name+"<div style='font-size:9px;color:#4a6a7a;margin-top:4px'>"+new Date().toLocaleTimeString()+"</div>";d.insertBefore(div,d.firstChild);if(d.children.length>6)d.lastChild.remove()}
-setInterval(addUpdate,4000);addUpdate();
-document.getElementById("trends").innerHTML=trends.map((t,i)=>"<div class='trend'><div style='font-size:10px;color:#5a7a8a'>"+(i+1)+" · Trending</div><div style='font-size:13px;font-weight:600'>"+t.t+"</div><div style='font-size:10px;color:#6a8a9a'>"+t.c+" posts</div></div>").join("");
-setInterval(()=>document.getElementById("clock").textContent="UTC: "+new Date().toUTCString().split(" ")[4],1000);
+// Live updates
+var updateTypes=[
+  "BREAKING: New strikes reported in",
+  "ALERT: Escalation detected near",
+  "INTEL: Troop movements in",
+  "NAVAL: Vessel activity near",
+  "CYBER: Attack attributed to",
+  "WARNING: Humanitarian crisis in",
+  "ANALYSIS: Increased tension in",
+  "REPORT: Ceasefire violated in",
+  "URGENT: Evacuation orders in",
+  "UPDATE: Diplomatic talks about"
+];
+
+function addUpdate(){
+  var c=conflicts[Math.floor(Math.random()*conflicts.length)];
+  var t=updateTypes[Math.floor(Math.random()*updateTypes.length)];
+  var d=document.getElementById("updates");
+  var time=new Date().toLocaleTimeString();
+  var div=document.createElement("div");
+  div.className="update latest";
+  div.innerHTML="<div style='color:#ff6666;font-weight:bold;margin-bottom:4px'>[!] "+t+"</div><div style='color:#8aa8b8'>"+c.name+" ("+c.region+")</div><div style='font-size:9px;color:#4a6a7a;margin-top:6px'>"+time+"</div>";
+  if(d.firstChild)d.firstChild.classList.remove("latest");
+  d.insertBefore(div,d.firstChild);
+  if(d.children.length>10)d.lastChild.remove();
+  document.getElementById("last-update").textContent=time;
+}
+setInterval(addUpdate,3000);
+addUpdate();addUpdate();addUpdate();
+
+// Trends
+var trendsHTML="";
+trends.forEach(function(t,i){
+  trendsHTML+="<div class='trend'><div style='font-size:10px;color:#5a7a8a'>"+(i+1)+" Trending</div><div style='font-size:13px;font-weight:bold;color:#1da1f2;margin:4px 0'>"+t.t+"</div><div style='font-size:10px;color:#6a8a9a'>"+t.c+" posts</div></div>";
+});
+document.getElementById("trends").innerHTML=trendsHTML;
+
+// Clock
+setInterval(function(){
+  document.getElementById("clock").textContent="UTC: "+new Date().toUTCString().split(" ")[4];
+},1000);
+
+// Init
 draw();
 </script>
 </body>

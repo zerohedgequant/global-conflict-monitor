@@ -2,313 +2,578 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Global Conflict Monitor - ZerohedgeQuantbyShrey</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:monospace;background:#0a1520;color:#e0e8f0;overflow:hidden}
+body{font-family:'Courier New',monospace;background:#060d14;color:#e0e8f0;overflow:hidden}
 .container{display:flex;flex-direction:column;height:100vh}
-header{padding:12px 24px;background:rgba(10,25,40,0.95);border-bottom:1px solid #1a3a4a;display:flex;justify-content:space-between;align-items:center}
-h1{font-size:18px;background:linear-gradient(90deg,#00aaff,#00ffaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header{padding:10px 20px;background:linear-gradient(180deg,rgba(10,25,40,0.98),rgba(8,18,30,0.95));border-bottom:1px solid #1a3a4a;display:flex;justify-content:space-between;align-items:center;z-index:1000}
+h1{font-size:16px;background:linear-gradient(90deg,#00aaff,#00ffaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px}
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:260px;background:rgba(10,20,35,0.95);border-right:1px solid #1a3a4a;display:flex;flex-direction:column}
-.sidebar-right{width:220px;border-right:none;border-left:1px solid #1a3a4a}
-.sidebar-header{padding:12px;border-bottom:1px solid #1a3a4a;font-size:11px;color:#5a8a9a;letter-spacing:2px}
-.sidebar-content{flex:1;overflow:auto;padding:8px}
-.map-area{flex:1;position:relative;background:#0a1520}
-svg{width:100%;height:100%;display:block}
-.update{padding:10px;margin-bottom:6px;background:rgba(30,50,70,0.5);border-radius:6px;font-size:11px;border:1px solid transparent}
-.update.latest{background:rgba(255,68,68,0.15);border-color:rgba(255,68,68,0.4)}
-.trend{padding:10px;margin-bottom:4px;border-radius:6px;cursor:pointer;border-left:2px solid transparent}
-.trend:hover{background:rgba(29,161,242,0.1);border-left-color:#1da1f2}
-.legend{padding:12px;border-top:1px solid #1a3a4a;margin-top:auto}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:10px;margin-bottom:6px;color:#8aa8b8}
+.sidebar{width:320px;background:rgba(8,16,24,0.98);border-right:1px solid #1a3a4a;display:flex;flex-direction:column;z-index:1000}
+.sidebar-right{width:260px;border-right:none;border-left:1px solid #1a3a4a}
+.sidebar-content{flex:1;overflow-y:auto;padding:8px}
+.sidebar-content::-webkit-scrollbar{width:6px}
+.sidebar-content::-webkit-scrollbar-track{background:#0a1520}
+.sidebar-content::-webkit-scrollbar-thumb{background:#2a4a5a;border-radius:3px}
+.map-area{flex:1;position:relative;z-index:1}
+#map{width:100%;height:100%;background:#0a1520}
+.update{padding:10px 12px;margin-bottom:6px;background:rgba(20,40,60,0.7);border-radius:6px;font-size:11px;border-left:4px solid #444;cursor:pointer;transition:all 0.3s ease}
+.update:hover{background:rgba(30,60,90,0.8);transform:translateX(4px);box-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.update.breaking{background:rgba(255,50,50,0.15);border-left-color:#ff4444}
+.update.military{background:rgba(255,100,100,0.12);border-left-color:#ff6666}
+.update.cyber{background:rgba(255,255,0,0.1);border-left-color:#ffff00}
+.update.diplomatic{background:rgba(68,255,68,0.1);border-left-color:#44ff44}
+.flight{padding:8px 10px;margin-bottom:5px;background:rgba(0,100,150,0.15);border-radius:5px;font-size:10px;border-left:3px solid #00aaff;cursor:pointer;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center}
+.flight:hover{background:rgba(0,150,200,0.3);transform:translateX(3px)}
+.legend{padding:12px;border-top:1px solid #1a3a4a;margin-top:auto;background:rgba(10,20,35,0.8)}
+.legend-title{font-size:9px;color:#5a8a9a;margin-bottom:8px;letter-spacing:1px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:10px;margin-bottom:5px;color:#9ab8c8}
 .dot{width:10px;height:10px;border-radius:50%}
-.credit{position:absolute;bottom:16px;right:16px;font-size:10px;color:#4a6a7a;background:rgba(10,25,40,0.9);padding:6px 12px;border-radius:4px;border:1px solid #1a3a4a}
+.credit{position:absolute;bottom:25px;right:10px;font-size:10px;color:#5a8a9a;background:rgba(10,20,30,0.95);padding:6px 14px;border-radius:5px;border:1px solid #1a3a4a;z-index:1000}
 .credit a{color:#00aaff;text-decoration:none}
-.live{color:#00ff88;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.filters{position:absolute;top:16px;left:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a;z-index:100}
-.filter-btn{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;background:transparent;border:1px solid #2a4a5a;border-radius:4px;color:#6a8a9a;font-size:10px;cursor:pointer;text-align:left;width:100%}
-.filter-btn:hover,.filter-btn.active{background:rgba(0,170,255,0.2);border-color:#00aaff;color:#00aaff}
-.color-bar{width:20px;height:3px;border-radius:2px}
-.stats{position:absolute;top:16px;right:16px;background:rgba(10,25,40,0.95);padding:12px;border-radius:8px;border:1px solid #1a3a4a;font-size:11px}
-.stat-row{display:flex;justify-content:space-between;margin-bottom:6px}
-.stat-label{color:#5a8a9a}
-.stat-value{color:#00ffaa;font-weight:bold}
+.live{color:#00ff88;animation:pulse 1.5s infinite;font-size:9px;padding:3px 8px;background:rgba(0,255,136,0.1);border-radius:4px;border:1px solid rgba(0,255,136,0.3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.controls{position:absolute;top:80px;right:15px;display:flex;flex-direction:column;gap:5px;z-index:1000}
+.ctrl-btn{width:40px;height:40px;background:rgba(10,25,40,0.95);border:1px solid #2a4a5a;border-radius:6px;color:#8ac8d8;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.ctrl-btn:hover{background:rgba(0,170,255,0.3);border-color:#00aaff;transform:scale(1.05)}
+.info-panel{position:absolute;top:80px;left:15px;background:rgba(10,25,40,0.95);padding:12px 16px;border-radius:8px;border:1px solid #1a3a4a;z-index:1000;min-width:180px}
+.info-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px}
+.info-label{color:#5a8a9a}
+.info-value{font-weight:bold}
+.tabs{display:flex;border-bottom:1px solid #1a3a4a;background:rgba(15,30,45,0.5)}
+.tab{flex:1;padding:10px 5px;text-align:center;font-size:10px;color:#5a8a9a;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s}
+.tab:hover{color:#8ac8d8;background:rgba(0,170,255,0.05)}
+.tab.active{color:#00aaff;border-bottom-color:#00aaff;background:rgba(0,170,255,0.1)}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:8px}
+.tab-content.active{display:block}
+.header-stats{display:flex;gap:20px;font-size:11px}
+.header-stat{color:#6a8a9a;display:flex;align-items:center;gap:5px}
+.header-stat span{font-weight:bold}
+.header-stat.danger span{color:#ff4444}
+.header-stat.warning span{color:#ffaa00}
+.header-stat.info span{color:#00aaff}
+.source{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:4px 10px;background:rgba(0,170,255,0.15);border-radius:4px;font-size:9px;color:#00aaff;text-decoration:none;transition:all 0.2s}
+.source:hover{background:rgba(0,170,255,0.3);transform:scale(1.02)}
+.source-badge{padding:2px 5px;border-radius:3px;font-size:8px;font-weight:bold}
+.source-reuters{background:#ff6600;color:#fff}
+.source-ap{background:#ff0000;color:#fff}
+.source-bbc{background:#bb1919;color:#fff}
+.source-aljazeera{background:#d2a44e;color:#000}
+.source-cnn{background:#cc0000;color:#fff}
+.verified{color:#00ff88;font-size:8px;margin-left:2px}
+.leaflet-control-zoom{display:none}
+.leaflet-control-attribution{display:none}
+.conflict-popup{background:rgba(10,25,40,0.98);border:1px solid #2a5a7a;border-radius:8px;padding:0;min-width:220px}
+.conflict-popup .leaflet-popup-content-wrapper{background:transparent;color:#e0e8f0;border-radius:8px;padding:0}
+.conflict-popup .leaflet-popup-content{margin:0;padding:15px}
+.conflict-popup .leaflet-popup-tip{background:rgba(10,25,40,0.98);border:1px solid #2a5a7a}
+.popup-title{font-size:14px;font-weight:bold;margin-bottom:8px;color:#fff}
+.popup-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+.popup-label{color:#6a8a9a}
+.popup-value{color:#00aaff}
+.popup-link{display:block;margin-top:10px;padding:8px;background:rgba(0,170,255,0.2);border-radius:4px;text-align:center;color:#00aaff;text-decoration:none;font-size:10px;transition:all 0.2s}
+.popup-link:hover{background:rgba(0,170,255,0.4)}
+.map-style-btn{position:absolute;bottom:80px;right:15px;z-index:1000}
+.pulse-marker{animation:markerPulse 2s infinite}
+@keyframes markerPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.7}}
 </style>
 </head>
 <body>
 <div class="container">
 <header>
-<div style="display:flex;align-items:center;gap:16px">
-<span class="live">●</span>
+<div style="display:flex;align-items:center;gap:15px">
+<span class="live">● LIVE</span>
 <h1>GLOBAL CONFLICT MONITOR</h1>
-<span style="font-size:10px;color:#00ff88;padding:2px 8px;background:rgba(0,255,136,0.1);border-radius:4px;border:1px solid rgba(0,255,136,0.3)">LIVE</span>
 </div>
-<div style="font-size:11px;color:#5a8a9a">
-<span id="clock">UTC: --:--:--</span>
+<div class="header-stats">
+<div class="header-stat danger">ACTIVE: <span id="h-active">0</span></div>
+<div class="header-stat warning">TENSION: <span id="h-tension">0</span></div>
+<div class="header-stat info">FLIGHTS: <span id="h-flights">0</span></div>
+<div class="header-stat" id="clock">UTC --:--:--</div>
 </div>
 </header>
 <div class="main">
 <div class="sidebar">
-<div class="sidebar-header">[!] LIVE FEED</div>
-<div class="sidebar-content" id="updates"></div>
+<div class="tabs">
+<div class="tab active" data-tab="feed">LIVE FEED</div>
+<div class="tab" data-tab="political">EVENTS</div>
+</div>
+<div class="tab-content active" id="feed-content"></div>
+<div class="tab-content" id="political-content"></div>
 </div>
 <div class="map-area">
-<div class="filters">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:10px;letter-spacing:1px">CONNECTION TYPES</div>
-<button class="filter-btn active" data-filter="all"><span class="color-bar" style="background:linear-gradient(90deg,#ff4444,#44ff44)"></span>ALL CONNECTIONS</button>
-<button class="filter-btn" data-filter="proxy"><span class="color-bar" style="background:#ff4444"></span>PROXY WARS</button>
-<button class="filter-btn" data-filter="arms"><span class="color-bar" style="background:#ff8800"></span>ARMS FLOWS</button>
-<button class="filter-btn" data-filter="alliance"><span class="color-bar" style="background:#44ff44"></span>ALLIANCES</button>
-<button class="filter-btn" data-filter="cyber"><span class="color-bar" style="background:#ffff00"></span>CYBER LINKS</button>
-<button class="filter-btn" data-filter="spillover"><span class="color-bar" style="background:#aa44ff"></span>SPILLOVER</button>
-<button class="filter-btn" data-filter="naval"><span class="color-bar" style="background:#00cccc"></span>NAVAL ROUTES</button>
+<div id="map"></div>
+<div class="info-panel">
+<div style="font-size:9px;color:#5a8a9a;margin-bottom:8px;letter-spacing:1px">SITUATION REPORT</div>
+<div class="info-row"><span class="info-label">Active Zones:</span><span class="info-value" style="color:#ff4444" id="stat-active">0</span></div>
+<div class="info-row"><span class="info-label">Tension Zones:</span><span class="info-value" style="color:#ffaa00" id="stat-tension">0</span></div>
+<div class="info-row"><span class="info-label">Frozen:</span><span class="info-value" style="color:#6688ff" id="stat-frozen">0</span></div>
+<div class="info-row"><span class="info-label">Connections:</span><span class="info-value" style="color:#aa88ff" id="stat-conn">0</span></div>
+<div class="info-row"><span class="info-label">Mil Aircraft:</span><span class="info-value" style="color:#00aaff" id="stat-flights">0</span></div>
 </div>
-<div class="stats">
-<div class="stat-row"><span class="stat-label">ACTIVE CONFLICTS:</span><span class="stat-value" id="active-count">0</span></div>
-<div class="stat-row"><span class="stat-label">TENSION ZONES:</span><span class="stat-value" style="color:#ffaa00" id="tension-count">0</span></div>
-<div class="stat-row"><span class="stat-label">CONNECTIONS:</span><span class="stat-value" id="conn-count">0</span></div>
-<div class="stat-row"><span class="stat-label">LAST UPDATE:</span><span class="stat-value" id="last-update">--:--:--</span></div>
+<div class="controls">
+<button class="ctrl-btn" id="zoomIn" title="Zoom In">+</button>
+<button class="ctrl-btn" id="zoomOut" title="Zoom Out">−</button>
+<button class="ctrl-btn" id="resetView" title="Reset View">⌂</button>
+<button class="ctrl-btn" id="toggleConnections" title="Toggle Connections">◈</button>
+<button class="ctrl-btn" id="toggleFlights" title="Toggle Flights">✈</button>
 </div>
-<svg id="map" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg>
+<div class="map-style-btn">
+<button class="ctrl-btn" id="toggleStyle" title="Change Map Style">🗺</button>
+</div>
 <div class="credit">Made by <a href="https://github.com/ZerohedgeQuantbyShrey" target="_blank">ZerohedgeQuantbyShrey</a></div>
 </div>
 <div class="sidebar sidebar-right">
-<div class="sidebar-header">X TRENDING</div>
-<div class="sidebar-content" id="trends"></div>
+<div class="tabs">
+<div class="tab active" data-tab="flights">FLIGHT RADAR</div>
+<div class="tab" data-tab="trends">TRENDING</div>
+</div>
+<div class="tab-content active" id="flights-content"></div>
+<div class="tab-content" id="trends-content"></div>
 <div class="legend">
-<div style="font-size:10px;color:#5a8a9a;margin-bottom:10px;letter-spacing:1px">CONFLICT STATUS</div>
+<div class="legend-title">CONFLICT STATUS</div>
 <div class="legend-item"><span class="dot" style="background:#ff3333;box-shadow:0 0 8px #ff3333"></span>Active Conflict</div>
 <div class="legend-item"><span class="dot" style="background:#ffaa00;box-shadow:0 0 8px #ffaa00"></span>Tension Zone</div>
 <div class="legend-item"><span class="dot" style="background:#6688ff;box-shadow:0 0 8px #6688ff"></span>Frozen Conflict</div>
+<div style="margin-top:10px" class="legend-title">CONNECTIONS</div>
+<div class="legend-item"><span style="display:inline-block;width:20px;height:3px;background:#ff4444;border-radius:2px"></span>Proxy Wars</div>
+<div class="legend-item"><span style="display:inline-block;width:20px;height:3px;background:#ff8800;border-radius:2px"></span>Arms Flow</div>
+<div class="legend-item"><span style="display:inline-block;width:20px;height:3px;background:#44ff44;border-radius:2px"></span>Alliance</div>
+<div style="margin-top:10px" class="legend-title">AIRCRAFT</div>
+<div class="legend-item"><span style="color:#00aaff;font-size:14px">✈</span>Military</div>
+<div class="legend-item"><span style="color:#ff8800;font-size:14px">✈</span>Surveillance</div>
 </div>
 </div>
 </div>
 </div>
+
 <script>
-var conflicts=[
-{id:1,name:"Ukraine-Russia",lat:48.38,lng:31.17,intensity:5,type:"active",region:"Europe"},
-{id:2,name:"Gaza",lat:31.35,lng:34.31,intensity:5,type:"active",region:"Middle East"},
-{id:3,name:"Sudan",lat:15.50,lng:32.56,intensity:4,type:"active",region:"Africa"},
-{id:4,name:"Yemen",lat:15.55,lng:48.52,intensity:4,type:"active",region:"Middle East"},
-{id:5,name:"Syria",lat:34.80,lng:38.99,intensity:3,type:"active",region:"Middle East"},
-{id:6,name:"Taiwan Strait",lat:23.70,lng:120.96,intensity:2,type:"tension",region:"Asia"},
-{id:7,name:"South China Sea",lat:12.88,lng:121.77,intensity:2,type:"tension",region:"Asia"},
-{id:8,name:"Korean Peninsula",lat:38.0,lng:127.5,intensity:2,type:"tension",region:"Asia"},
-{id:9,name:"Iran",lat:32.43,lng:53.69,intensity:3,type:"tension",region:"Middle East"},
-{id:10,name:"Ethiopia",lat:9.15,lng:40.49,intensity:3,type:"active",region:"Africa"},
-{id:11,name:"Myanmar",lat:21.92,lng:95.96,intensity:4,type:"active",region:"Asia"},
-{id:12,name:"Sahel",lat:14.50,lng:0.15,intensity:4,type:"active",region:"Africa"},
-{id:13,name:"Armenia-Azerbaijan",lat:40.07,lng:45.04,intensity:2,type:"frozen",region:"Caucasus"},
-{id:14,name:"DR Congo",lat:-4.04,lng:21.76,intensity:4,type:"active",region:"Africa"},
-{id:15,name:"Somalia",lat:5.15,lng:46.20,intensity:3,type:"active",region:"Africa"},
-{id:16,name:"Libya",lat:26.34,lng:17.23,intensity:3,type:"active",region:"Africa"},
-{id:17,name:"Afghanistan",lat:33.94,lng:67.71,intensity:3,type:"active",region:"Asia"},
-{id:18,name:"Kashmir",lat:33.73,lng:73.09,intensity:2,type:"tension",region:"Asia"},
-{id:19,name:"Venezuela",lat:6.42,lng:-66.59,intensity:2,type:"tension",region:"Americas"},
-{id:20,name:"Haiti",lat:18.97,lng:-72.29,intensity:3,type:"active",region:"Americas"},
-{id:21,name:"Red Sea/Houthis",lat:15.55,lng:42.52,intensity:4,type:"active",region:"Middle East"},
-{id:22,name:"Lebanon",lat:33.85,lng:35.86,intensity:4,type:"active",region:"Middle East"}
+// Data
+var conflicts = [
+  {id:1,name:"Ukraine-Russia War",lat:48.38,lng:31.17,intensity:5,type:"active",region:"Europe",desc:"Full-scale invasion since Feb 2022",url:"https://www.reuters.com/world/europe/"},
+  {id:2,name:"Gaza Conflict",lat:31.35,lng:34.31,intensity:5,type:"active",region:"Middle East",desc:"Israel-Hamas war ongoing",url:"https://www.aljazeera.com/tag/israel-palestine-conflict/"},
+  {id:3,name:"Sudan Civil War",lat:15.50,lng:32.56,intensity:4,type:"active",region:"Africa",desc:"SAF vs RSF fighting",url:"https://www.bbc.com/news/topics/cq23pdgvgm8t"},
+  {id:4,name:"Yemen War",lat:15.55,lng:48.52,intensity:4,type:"active",region:"Middle East",desc:"Houthi vs Coalition",url:"https://www.reuters.com/world/middle-east/"},
+  {id:5,name:"Syria War",lat:34.80,lng:38.99,intensity:3,type:"active",region:"Middle East",desc:"Multi-faction civil war",url:"https://www.aljazeera.com/where/syria/"},
+  {id:6,name:"Taiwan Strait",lat:23.70,lng:120.96,intensity:2,type:"tension",region:"Asia",desc:"China-Taiwan tensions",url:"https://www.reuters.com/world/asia-pacific/"},
+  {id:7,name:"South China Sea",lat:12.88,lng:114.77,intensity:2,type:"tension",region:"Asia",desc:"Maritime disputes",url:"https://apnews.com/hub/south-china-sea"},
+  {id:8,name:"Korean Peninsula",lat:38.0,lng:127.5,intensity:2,type:"tension",region:"Asia",desc:"North-South standoff",url:"https://www.reuters.com/world/asia-pacific/"},
+  {id:9,name:"Iran",lat:32.43,lng:53.69,intensity:3,type:"tension",region:"Middle East",desc:"Regional proxy conflicts",url:"https://www.bbc.com/news/topics/cx1m7zg01xyt"},
+  {id:10,name:"Ethiopia-Tigray",lat:9.15,lng:40.49,intensity:3,type:"active",region:"Africa",desc:"Post-ceasefire tensions",url:"https://apnews.com/hub/ethiopia"},
+  {id:11,name:"Myanmar Civil War",lat:21.92,lng:95.96,intensity:4,type:"active",region:"Asia",desc:"Junta vs resistance",url:"https://www.reuters.com/world/asia-pacific/"},
+  {id:12,name:"Sahel Crisis",lat:14.50,lng:0.15,intensity:4,type:"active",region:"Africa",desc:"Jihadist insurgency",url:"https://www.aljazeera.com/tag/sahel/"},
+  {id:13,name:"Nagorno-Karabakh",lat:40.07,lng:45.04,intensity:2,type:"frozen",region:"Caucasus",desc:"Armenia-Azerbaijan",url:"https://www.reuters.com/world/"},
+  {id:14,name:"DR Congo",lat:-4.04,lng:21.76,intensity:4,type:"active",region:"Africa",desc:"M23 and militia violence",url:"https://www.bbc.com/news/topics/cdl8n2edezlt"},
+  {id:15,name:"Somalia",lat:5.15,lng:46.20,intensity:3,type:"active",region:"Africa",desc:"Al-Shabaab insurgency",url:"https://www.aljazeera.com/where/somalia/"},
+  {id:16,name:"Libya",lat:26.34,lng:17.23,intensity:3,type:"active",region:"Africa",desc:"Rival government factions",url:"https://www.reuters.com/world/africa/"},
+  {id:17,name:"Afghanistan",lat:33.94,lng:67.71,intensity:3,type:"active",region:"Asia",desc:"Taliban rule, ISIS-K attacks",url:"https://www.bbc.com/news/world-asia-41014263"},
+  {id:18,name:"Kashmir",lat:33.73,lng:76.09,intensity:2,type:"tension",region:"Asia",desc:"India-Pakistan dispute",url:"https://www.aljazeera.com/tag/kashmir/"},
+  {id:19,name:"Venezuela",lat:6.42,lng:-66.59,intensity:2,type:"tension",region:"Americas",desc:"Political instability",url:"https://www.reuters.com/world/americas/"},
+  {id:20,name:"Haiti",lat:18.97,lng:-72.29,intensity:3,type:"active",region:"Americas",desc:"Gang violence crisis",url:"https://apnews.com/hub/haiti"},
+  {id:21,name:"Red Sea Crisis",lat:15.55,lng:42.52,intensity:4,type:"active",region:"Middle East",desc:"Houthi ship attacks",url:"https://www.reuters.com/world/middle-east/"},
+  {id:22,name:"Lebanon",lat:33.85,lng:35.86,intensity:4,type:"active",region:"Middle East",desc:"Israel-Hezbollah conflict",url:"https://www.aljazeera.com/where/lebanon/"}
 ];
 
-var connections=[
-{from:1,to:9,type:"proxy",label:"Drone Supply"},
-{from:1,to:8,type:"alliance",label:"NATO Support"},
-{from:2,to:9,type:"proxy",label:"Hamas Support"},
-{from:2,to:22,type:"spillover",label:"Hezbollah Link"},
-{from:2,to:21,type:"proxy",label:"Houthi Attacks"},
-{from:4,to:9,type:"proxy",label:"Iran Backing"},
-{from:4,to:21,type:"alliance",label:"Houthi Coalition"},
-{from:5,to:9,type:"proxy",label:"Assad Support"},
-{from:5,to:1,type:"alliance",label:"Russia Alliance"},
-{from:6,to:7,type:"alliance",label:"China Claims"},
-{from:6,to:8,type:"cyber",label:"Cyber Ops"},
-{from:7,to:8,type:"naval",label:"Naval Presence"},
-{from:9,to:21,type:"arms",label:"Arms Flow"},
-{from:9,to:22,type:"arms",label:"Weapons Transfer"},
-{from:3,to:10,type:"spillover",label:"Refugee Crisis"},
-{from:3,to:14,type:"arms",label:"Mercenary Flow"},
-{from:12,to:16,type:"spillover",label:"Extremism"},
-{from:12,to:14,type:"arms",label:"Wagner Group"},
-{from:1,to:12,type:"proxy",label:"Wagner Ops"},
-{from:15,to:21,type:"alliance",label:"Al-Shabaab"},
-{from:17,to:18,type:"spillover",label:"Taliban Border"},
-{from:11,to:6,type:"arms",label:"Rare Earth"},
-{from:1,to:6,type:"cyber",label:"Info War"},
-{from:9,to:19,type:"alliance",label:"Oil Trade"},
-{from:14,to:10,type:"arms",label:"Resources"},
-{from:16,to:12,type:"arms",label:"Weapons Flow"},
-{from:20,to:19,type:"spillover",label:"Migration"}
+var connections = [
+  {from:1,to:9,type:"proxy",label:"Iran drones to Russia"},
+  {from:2,to:9,type:"proxy",label:"Iran backing Hamas"},
+  {from:2,to:22,type:"arms",label:"Hezbollah coordination"},
+  {from:2,to:21,type:"proxy",label:"Houthi Red Sea attacks"},
+  {from:4,to:9,type:"proxy",label:"Iran backing Houthis"},
+  {from:5,to:9,type:"proxy",label:"Iran supporting Assad"},
+  {from:5,to:1,type:"alliance",label:"Russia-Syria alliance"},
+  {from:6,to:7,type:"alliance",label:"China territorial claims"},
+  {from:6,to:8,type:"alliance",label:"US defense commitments"},
+  {from:9,to:21,type:"arms",label:"Iran weapons to Houthis"},
+  {from:9,to:22,type:"arms",label:"Iran weapons to Hezbollah"},
+  {from:3,to:14,type:"arms",label:"Mercenary flows"},
+  {from:12,to:16,type:"arms",label:"Wagner/Africa Corps"},
+  {from:1,to:12,type:"proxy",label:"Russian influence Africa"},
+  {from:17,to:18,type:"arms",label:"Militant crossover"},
+  {from:15,to:21,type:"alliance",label:"Al-Shabaab networks"}
 ];
 
-var connColors={proxy:"#ff4444",arms:"#ff8800",alliance:"#44ff44",spillover:"#aa44ff",cyber:"#ffff00",naval:"#00cccc"};
+var connColors = {proxy:"#ff4444",arms:"#ff8800",alliance:"#44ff44",spillover:"#aa44ff",cyber:"#ffff00",naval:"#00cccc"};
 
-var trends=[
-{t:"#UkraineWar",c:"2.4M",ids:[1]},
-{t:"#GazaCeasefire",c:"1.8M",ids:[2,22]},
-{t:"#RedSeaCrisis",c:"890K",ids:[21,4]},
-{t:"#TaiwanChina",c:"650K",ids:[6,7]},
-{t:"#SudanConflict",c:"420K",ids:[3]},
-{t:"#NATO",c:"380K",ids:[1,8]},
-{t:"#IranProxy",c:"290K",ids:[9,4,21]},
-{t:"#MyanmarCrisis",c:"180K",ids:[11]},
-{t:"#Sahel",c:"145K",ids:[12]},
-{t:"#NorthKorea",c:"230K",ids:[8]}
+var militaryFlights = [
+  {id:"FORTE12",type:"RQ-4 Global Hawk",from:[38.5,-98],to:[48,35],status:"Surveillance",region:"Ukraine",url:"https://www.flightradar24.com/"},
+  {id:"DUKE01",type:"RC-135 Rivet Joint",from:[52,0],to:[55,25],status:"SIGINT",region:"Baltic",url:"https://www.flightradar24.com/"},
+  {id:"HOMER71",type:"P-8A Poseidon",from:[35,140],to:[25,125],status:"Maritime Patrol",region:"Taiwan Strait",url:"https://www.flightradar24.com/"},
+  {id:"LAGR223",type:"E-3 Sentry AWACS",from:[49,2],to:[45,25],status:"AWACS",region:"Eastern Europe",url:"https://www.flightradar24.com/"},
+  {id:"JAKE11",type:"KC-135 Stratotanker",from:[51,-1],to:[48,15],status:"Air Refueling",region:"Europe",url:"https://www.flightradar24.com/"},
+  {id:"NCHO904",type:"MQ-9 Reaper",from:[33,44],to:[30,48],status:"Reconnaissance",region:"Middle East",url:"https://www.flightradar24.com/"},
+  {id:"VIPER01",type:"F-35A Lightning",from:[32,35],to:[34,36],status:"Combat Air Patrol",region:"Israel",url:"https://www.flightradar24.com/"},
+  {id:"RAGE21",type:"B-52H Stratofortress",from:[19,-155],to:[35,130],status:"Strategic Patrol",region:"Pacific",url:"https://www.flightradar24.com/"},
+  {id:"EVAC08",type:"C-17 Globemaster",from:[38,-77],to:[50,30],status:"Airlift",region:"Ukraine Support",url:"https://www.flightradar24.com/"}
 ];
 
-var filter="all";
-var svg=document.getElementById("map");
+var newsSources = {
+  reuters:{name:"Reuters",badge:"source-reuters",base:"https://www.reuters.com/world/"},
+  ap:{name:"AP News",badge:"source-ap",base:"https://apnews.com/world-news"},
+  bbc:{name:"BBC News",badge:"source-bbc",base:"https://www.bbc.com/news/world"},
+  aljazeera:{name:"Al Jazeera",badge:"source-aljazeera",base:"https://www.aljazeera.com/news/"},
+  cnn:{name:"CNN",badge:"source-cnn",base:"https://www.cnn.com/world"}
+};
 
-function toXY(lat,lng){return{x:((lng+180)/360)*1000,y:((90-lat)/180)*500}}
+var trends = [
+  {t:"#UkraineWar",c:"2.4M posts",url:"https://twitter.com/search?q=%23UkraineWar"},
+  {t:"#GazaCeasefire",c:"1.8M posts",url:"https://twitter.com/search?q=%23GazaCeasefire"},
+  {t:"#RedSeaCrisis",c:"890K posts",url:"https://twitter.com/search?q=%23RedSeaCrisis"},
+  {t:"#TaiwanStrait",c:"650K posts",url:"https://twitter.com/search?q=%23Taiwan"},
+  {t:"#NATO",c:"520K posts",url:"https://twitter.com/search?q=%23NATO"},
+  {t:"#IranProxies",c:"380K posts",url:"https://twitter.com/search?q=%23Iran"}
+];
 
-function getById(id){return conflicts.find(function(c){return c.id===id})}
+// Map styles
+var mapStyles = {
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  terrain: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+var currentStyle = 'dark';
+var styleNames = ['dark', 'satellite', 'terrain', 'osm'];
+var styleIndex = 0;
 
-function draw(){
-  svg.innerHTML="";
+// Initialize map
+var map = L.map('map', {
+  center: [25, 30],
+  zoom: 3,
+  minZoom: 2,
+  maxZoom: 18,
+  zoomControl: false,
+  attributionControl: false,
+  worldCopyJump: true
+});
+
+var tileLayer = L.tileLayer(mapStyles.dark, {
+  maxZoom: 19,
+  attribution: ''
+}).addTo(map);
+
+// Layers
+var markersLayer = L.layerGroup().addTo(map);
+var connectionsLayer = L.layerGroup().addTo(map);
+var flightsLayer = L.layerGroup().addTo(map);
+
+var showConnections = true;
+var showFlights = true;
+var flightMarkers = {};
+var flightPaths = {};
+var flightProgress = {};
+
+// Create conflict markers
+function createMarkers() {
+  markersLayer.clearLayers();
+  var activeCount = 0, tensionCount = 0, frozenCount = 0;
   
-  // Grid
-  for(var i=0;i<=18;i++){
-    var l=document.createElementNS("http://www.w3.org/2000/svg","line");
-    l.setAttribute("x1",0);l.setAttribute("y1",(500/18)*i);
-    l.setAttribute("x2",1000);l.setAttribute("y2",(500/18)*i);
-    l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");
-    svg.appendChild(l);
-  }
-  for(var i=0;i<=36;i++){
-    var l=document.createElementNS("http://www.w3.org/2000/svg","line");
-    l.setAttribute("x1",(1000/36)*i);l.setAttribute("y1",0);
-    l.setAttribute("x2",(1000/36)*i);l.setAttribute("y2",500);
-    l.setAttribute("stroke","#1a3a4a");l.setAttribute("stroke-width","0.5");
-    svg.appendChild(l);
-  }
-  
-  // Connections
-  var connCount=0;
-  connections.forEach(function(c){
-    if(filter!=="all" && c.type!==filter)return;
-    var f=getById(c.from),t=getById(c.to);
-    if(!f||!t)return;
-    connCount++;
-    var s=toXY(f.lat,f.lng),e=toXY(t.lat,t.lng);
-    var mx=(s.x+e.x)/2,my=(s.y+e.y)/2-30;
-    var p=document.createElementNS("http://www.w3.org/2000/svg","path");
-    p.setAttribute("d","M"+s.x+" "+s.y+" Q"+mx+" "+my+" "+e.x+" "+e.y);
-    p.setAttribute("fill","none");
-    p.setAttribute("stroke",connColors[c.type]||"#888");
-    p.setAttribute("stroke-width","2");
-    p.setAttribute("stroke-dasharray","8,4");
-    p.setAttribute("stroke-linecap","round");
-    p.style.filter="drop-shadow(0 0 4px "+connColors[c.type]+")";
-    var a=document.createElementNS("http://www.w3.org/2000/svg","animate");
-    a.setAttribute("attributeName","stroke-dashoffset");
-    a.setAttribute("from","100");a.setAttribute("to","0");
-    a.setAttribute("dur","2s");a.setAttribute("repeatCount","indefinite");
-    p.appendChild(a);
-    svg.appendChild(p);
-  });
-  document.getElementById("conn-count").textContent=connCount;
-  
-  // Markers
-  var activeCount=0,tensionCount=0;
-  conflicts.forEach(function(c){
-    if(c.type==="active")activeCount++;
-    if(c.type==="tension")tensionCount++;
-    var pos=toXY(c.lat,c.lng);
-    var r=4+c.intensity*2;
-    var col=c.type==="active"?"#ff3333":c.type==="tension"?"#ffaa00":"#6688ff";
+  conflicts.forEach(function(c) {
+    var color = c.type === 'active' ? '#ff3333' : c.type === 'tension' ? '#ffaa00' : '#6688ff';
+    var size = 8 + c.intensity * 3;
     
-    // Pulse
-    var pulse=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    pulse.setAttribute("cx",pos.x);pulse.setAttribute("cy",pos.y);
-    pulse.setAttribute("r",r);pulse.setAttribute("fill",col);pulse.setAttribute("opacity","0.3");
-    var a1=document.createElementNS("http://www.w3.org/2000/svg","animate");
-    a1.setAttribute("attributeName","r");a1.setAttribute("from",r);a1.setAttribute("to",r+20);
-    a1.setAttribute("dur","1.5s");a1.setAttribute("repeatCount","indefinite");
-    pulse.appendChild(a1);
-    var a2=document.createElementNS("http://www.w3.org/2000/svg","animate");
-    a2.setAttribute("attributeName","opacity");a2.setAttribute("from","0.5");a2.setAttribute("to","0");
-    a2.setAttribute("dur","1.5s");a2.setAttribute("repeatCount","indefinite");
-    pulse.appendChild(a2);
-    svg.appendChild(pulse);
+    if (c.type === 'active') activeCount++;
+    else if (c.type === 'tension') tensionCount++;
+    else frozenCount++;
     
-    // Dot
-    var dot=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    dot.setAttribute("cx",pos.x);dot.setAttribute("cy",pos.y);
-    dot.setAttribute("r",r);dot.setAttribute("fill",col);
-    dot.style.filter="drop-shadow(0 0 8px "+col+")";
-    dot.style.cursor="pointer";
-    dot.onclick=function(){alert(c.name+"\nRegion: "+c.region+"\nIntensity: "+"*".repeat(c.intensity)+"\nStatus: "+c.type.toUpperCase())};
-    svg.appendChild(dot);
+    // Pulsing circle marker
+    var pulseIcon = L.divIcon({
+      className: 'custom-marker',
+      html: '<div style="position:relative;width:' + (size*2) + 'px;height:' + (size*2) + 'px;">' +
+            '<div style="position:absolute;width:100%;height:100%;border-radius:50%;background:' + color + ';opacity:0.3;animation:markerPulse 2s infinite"></div>' +
+            '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + color + ';box-shadow:0 0 15px ' + color + ',0 0 30px ' + color + '"></div>' +
+            '</div>',
+      iconSize: [size*2, size*2],
+      iconAnchor: [size, size]
+    });
+    
+    var marker = L.marker([c.lat, c.lng], {icon: pulseIcon}).addTo(markersLayer);
+    
+    // Popup
+    var popupContent = '<div class="popup-title">' + c.name + '</div>' +
+      '<div class="popup-row"><span class="popup-label">Status:</span><span class="popup-value" style="color:' + color + '">' + c.type.toUpperCase() + '</span></div>' +
+      '<div class="popup-row"><span class="popup-label">Region:</span><span class="popup-value">' + c.region + '</span></div>' +
+      '<div class="popup-row"><span class="popup-label">Intensity:</span><span class="popup-value">' + '●'.repeat(c.intensity) + '</span></div>' +
+      '<div style="font-size:10px;color:#8aa8b8;margin-top:8px">' + c.desc + '</div>' +
+      '<a href="' + c.url + '" target="_blank" class="popup-link">View Latest News →</a>';
+    
+    marker.bindPopup(popupContent, {className: 'conflict-popup'});
     
     // Label
-    var txt=document.createElementNS("http://www.w3.org/2000/svg","text");
-    txt.setAttribute("x",pos.x);txt.setAttribute("y",pos.y-r-6);
-    txt.setAttribute("text-anchor","middle");txt.setAttribute("fill","#fff");
-    txt.setAttribute("font-size","9");txt.setAttribute("font-family","monospace");
-    txt.style.textShadow="0 0 4px #000,0 0 8px #000";
-    txt.textContent=c.name;
-    svg.appendChild(txt);
+    var labelIcon = L.divIcon({
+      className: 'marker-label',
+      html: '<div style="color:#fff;font-size:10px;font-weight:bold;text-shadow:0 0 5px #000,0 0 10px #000;white-space:nowrap;transform:translateX(-50%)">' + c.name + '</div>',
+      iconAnchor: [0, -size - 5]
+    });
+    L.marker([c.lat, c.lng], {icon: labelIcon, interactive: false}).addTo(markersLayer);
   });
   
-  document.getElementById("active-count").textContent=activeCount;
-  document.getElementById("tension-count").textContent=tensionCount;
+  document.getElementById('h-active').textContent = activeCount;
+  document.getElementById('h-tension').textContent = tensionCount;
+  document.getElementById('stat-active').textContent = activeCount;
+  document.getElementById('stat-tension').textContent = tensionCount;
+  document.getElementById('stat-frozen').textContent = frozenCount;
 }
 
-// Filter buttons
-document.querySelectorAll(".filter-btn").forEach(function(btn){
-  btn.onclick=function(){
-    document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active")});
-    btn.classList.add("active");
-    filter=btn.getAttribute("data-filter");
-    draw();
+// Create connection lines
+function createConnections() {
+  connectionsLayer.clearLayers();
+  if (!showConnections) return;
+  
+  connections.forEach(function(conn) {
+    var from = conflicts.find(function(c) { return c.id === conn.from; });
+    var to = conflicts.find(function(c) { return c.id === conn.to; });
+    if (!from || !to) return;
+    
+    // Curved line
+    var latlngs = [
+      [from.lat, from.lng],
+      [(from.lat + to.lat) / 2 + 5, (from.lng + to.lng) / 2],
+      [to.lat, to.lng]
+    ];
+    
+    var line = L.polyline(latlngs, {
+      color: connColors[conn.type] || '#888',
+      weight: 2,
+      opacity: 0.7,
+      dashArray: '10, 6',
+      smoothFactor: 2
+    }).addTo(connectionsLayer);
+    
+    line.bindTooltip(conn.label, {permanent: false, direction: 'center', className: 'conn-tooltip'});
+    
+    // Animate dash
+    var offset = 0;
+    setInterval(function() {
+      offset = (offset + 1) % 16;
+      line.setStyle({dashOffset: -offset});
+    }, 100);
+  });
+  
+  document.getElementById('stat-conn').textContent = connections.length;
+}
+
+// Create flight paths
+function createFlights() {
+  flightsLayer.clearLayers();
+  flightMarkers = {};
+  flightPaths = {};
+  
+  if (!showFlights) {
+    document.getElementById('h-flights').textContent = 0;
+    document.getElementById('stat-flights').textContent = 0;
+    return;
   }
+  
+  militaryFlights.forEach(function(fl) {
+    // Initialize progress
+    if (!flightProgress[fl.id]) {
+      flightProgress[fl.id] = Math.random();
+    }
+    
+    // Flight path
+    var path = L.polyline([fl.from, fl.to], {
+      color: '#00aaff',
+      weight: 1,
+      opacity: 0.4,
+      dashArray: '5, 10'
+    }).addTo(flightsLayer);
+    flightPaths[fl.id] = path;
+    
+    // Aircraft icon
+    var isSurveillance = fl.status.includes('Surveillance') || fl.status.includes('SIGINT') || fl.status.includes('Recon');
+    var aircraftIcon = L.divIcon({
+      className: 'aircraft-marker',
+      html: '<div style="font-size:16px;color:' + (isSurveillance ? '#ff8800' : '#00aaff') + ';text-shadow:0 0 10px ' + (isSurveillance ? '#ff8800' : '#00aaff') + ';transform:rotate(' + getFlightAngle(fl) + 'deg)">✈</div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+    
+    var pos = getFlightPosition(fl);
+    var marker = L.marker(pos, {icon: aircraftIcon}).addTo(flightsLayer);
+    marker.bindTooltip('<b>' + fl.id + '</b><br>' + fl.type + '<br>' + fl.status, {direction: 'top'});
+    marker.on('click', function() { window.open(fl.url, '_blank'); });
+    flightMarkers[fl.id] = marker;
+  });
+  
+  document.getElementById('h-flights').textContent = militaryFlights.length;
+  document.getElementById('stat-flights').textContent = militaryFlights.length;
+}
+
+function getFlightAngle(fl) {
+  var dx = fl.to[1] - fl.from[1];
+  var dy = fl.to[0] - fl.from[0];
+  return Math.atan2(dx, dy) * 180 / Math.PI;
+}
+
+function getFlightPosition(fl) {
+  var t = flightProgress[fl.id];
+  var lat = fl.from[0] + (fl.to[0] - fl.from[0]) * t;
+  var lng = fl.from[1] + (fl.to[1] - fl.from[1]) * t;
+  return [lat, lng];
+}
+
+// Animate flights
+function animateFlights() {
+  if (!showFlights) return;
+  
+  militaryFlights.forEach(function(fl) {
+    flightProgress[fl.id] = (flightProgress[fl.id] + 0.002) % 1;
+    var pos = getFlightPosition(fl);
+    if (flightMarkers[fl.id]) {
+      flightMarkers[fl.id].setLatLng(pos);
+    }
+  });
+}
+
+setInterval(animateFlights, 50);
+
+// Controls
+document.getElementById('zoomIn').onclick = function() { map.zoomIn(1, {animate: true}); };
+document.getElementById('zoomOut').onclick = function() { map.zoomOut(1, {animate: true}); };
+document.getElementById('resetView').onclick = function() { map.flyTo([25, 30], 3, {duration: 1.5}); };
+
+document.getElementById('toggleConnections').onclick = function() {
+  showConnections = !showConnections;
+  this.style.color = showConnections ? '#00aaff' : '#4a5a6a';
+  createConnections();
+};
+
+document.getElementById('toggleFlights').onclick = function() {
+  showFlights = !showFlights;
+  this.style.color = showFlights ? '#00aaff' : '#4a5a6a';
+  createFlights();
+};
+
+document.getElementById('toggleStyle').onclick = function() {
+  styleIndex = (styleIndex + 1) % styleNames.length;
+  currentStyle = styleNames[styleIndex];
+  map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(mapStyles[currentStyle], {maxZoom: 19}).addTo(map);
+  tileLayer.bringToBack();
+};
+
+// Tabs
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.onclick = function() {
+    var parent = tab.closest('.sidebar');
+    parent.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    var tabName = tab.getAttribute('data-tab');
+    parent.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    document.getElementById(tabName + '-content').classList.add('active');
+  };
 });
 
-// Live updates
-var updateTypes=[
-  "BREAKING: New strikes reported in",
-  "ALERT: Escalation detected near",
-  "INTEL: Troop movements in",
-  "NAVAL: Vessel activity near",
-  "CYBER: Attack attributed to",
-  "WARNING: Humanitarian crisis in",
-  "ANALYSIS: Increased tension in",
-  "REPORT: Ceasefire violated in",
-  "URGENT: Evacuation orders in",
-  "UPDATE: Diplomatic talks about"
+// Live feed
+var updateTypes = [
+  {prefix:'[BREAKING]',type:'breaking',sources:['reuters','ap','bbc']},
+  {prefix:'[MILITARY]',type:'military',sources:['reuters','bbc']},
+  {prefix:'[INTEL]',type:'military',sources:['ap','reuters']},
+  {prefix:'[CYBER]',type:'cyber',sources:['bbc','reuters']},
+  {prefix:'[DIPLOMATIC]',type:'diplomatic',sources:['reuters','aljazeera']}
+];
+var updateTexts = [
+  'New strikes reported in','Escalation detected near','Troop movements in',
+  'Naval activity near','Ceasefire talks regarding','Air defense activated in',
+  'Missile launch detected near','Humanitarian corridor in','Drone strike on'
 ];
 
-function addUpdate(){
-  var c=conflicts[Math.floor(Math.random()*conflicts.length)];
-  var t=updateTypes[Math.floor(Math.random()*updateTypes.length)];
-  var d=document.getElementById("updates");
-  var time=new Date().toLocaleTimeString();
-  var div=document.createElement("div");
-  div.className="update latest";
-  div.innerHTML="<div style='color:#ff6666;font-weight:bold;margin-bottom:4px'>[!] "+t+"</div><div style='color:#8aa8b8'>"+c.name+" ("+c.region+")</div><div style='font-size:9px;color:#4a6a7a;margin-top:6px'>"+time+"</div>";
-  if(d.firstChild)d.firstChild.classList.remove("latest");
-  d.insertBefore(div,d.firstChild);
-  if(d.children.length>10)d.lastChild.remove();
-  document.getElementById("last-update").textContent=time;
+function addUpdate() {
+  var c = conflicts[Math.floor(Math.random() * conflicts.length)];
+  var ut = updateTypes[Math.floor(Math.random() * updateTypes.length)];
+  var txt = updateTexts[Math.floor(Math.random() * updateTexts.length)];
+  var sourceKey = ut.sources[Math.floor(Math.random() * ut.sources.length)];
+  var source = newsSources[sourceKey];
+  
+  var d = document.getElementById('feed-content');
+  var time = new Date().toLocaleTimeString();
+  var div = document.createElement('div');
+  div.className = 'update ' + ut.type;
+  div.innerHTML = '<div style="color:' + (ut.type === 'breaking' ? '#ff4444' : ut.type === 'cyber' ? '#ffff00' : '#ffaa00') + ';font-weight:bold;font-size:10px">' + ut.prefix + '</div>' +
+    '<div style="color:#d0e0f0;margin:5px 0">' + txt + ' <b>' + c.name + '</b></div>' +
+    '<div style="font-size:9px;color:#5a7a8a">' + time + ' • ' + c.region + '</div>' +
+    '<a href="' + source.base + '" target="_blank" class="source"><span class="source-badge ' + source.badge + '">' + sourceKey.charAt(0).toUpperCase() + '</span>' + source.name + '<span class="verified">✓</span></a>';
+  
+  div.onclick = function(e) {
+    if (e.target.tagName !== 'A' && !e.target.classList.contains('source-badge')) {
+      map.flyTo([c.lat, c.lng], 6, {duration: 1});
+    }
+  };
+  
+  d.insertBefore(div, d.firstChild);
+  if (d.children.length > 15) d.lastChild.remove();
 }
-setInterval(addUpdate,3000);
-addUpdate();addUpdate();addUpdate();
+
+setInterval(addUpdate, 4000);
+for (var i = 0; i < 5; i++) addUpdate();
+
+// Political events
+var politicalEvents = [
+  {type:'SUMMIT',title:'G7 Emergency Meeting',desc:'Leaders discuss $50B Ukraine aid',source:'reuters',region:'Brussels'},
+  {type:'SANCTION',title:'New Russia Sanctions',desc:'EU freezes oligarch assets',source:'bbc',region:'Europe'},
+  {type:'ELECTION',title:'Taiwan Election Update',desc:'DPP wins presidential race',source:'reuters',region:'Asia'},
+  {type:'TREATY',title:'US-Philippines Pact',desc:'New military bases approved',source:'ap',region:'Indo-Pacific'},
+  {type:'CEASEFIRE',title:'Gaza Talks Progress',desc:'Qatar-mediated negotiations',source:'aljazeera',region:'Middle East'},
+  {type:'MILITARY',title:'NATO Steadfast Defender',desc:'Largest exercise since Cold War',source:'bbc',region:'Europe'}
+];
+
+function renderPolitical() {
+  var html = '';
+  politicalEvents.forEach(function(e) {
+    var source = newsSources[e.source];
+    html += '<div class="update" style="border-left-color:#ffaa00;cursor:pointer" onclick="window.open(\'' + source.base + '\',\'_blank\')">' +
+      '<div style="color:#ffaa00;font-weight:bold;font-size:10px">[' + e.type + ']</div>' +
+      '<div style="color:#e0f0ff;margin:5px 0;font-weight:bold">' + e.title + '</div>' +
+      '<div style="font-size:10px;color:#8aa8b8">' + e.desc + '</div>' +
+      '<div style="font-size:9px;color:#5a7a8a;margin-top:4px">' + e.region + '</div>' +
+      '<a href="' + source.base + '" target="_blank" class="source" onclick="event.stopPropagation()"><span class="source-badge ' + source.badge + '">' + e.source.charAt(0).toUpperCase() + '</span>' + source.name + '</a></div>';
+  });
+  document.getElementById('political-content').innerHTML = html;
+}
+renderPolitical();
+
+// Flights panel
+function renderFlightsPanel() {
+  var html = '';
+  militaryFlights.forEach(function(fl) {
+    var isSurv = fl.status.includes('Surveillance') || fl.status.includes('SIGINT') || fl.status.includes('Recon');
+    html += '<div class="flight" onclick="window.open(\'' + fl.url + '\',\'_blank\')">' +
+      '<div><div style="color:' + (isSurv ? '#ff8800' : '#00aaff') + ';font-weight:bold">' + fl.id + '</div>' +
+      '<div style="font-size:9px;color:#6a8a9a">' + fl.type + '</div></div>' +
+      '<div style="text-align:right"><div style="font-size:9px;color:#8ab8c8">' + fl.status + '</div>' +
+      '<div style="font-size:8px;color:#5a7a8a">' + fl.region + '</div></div></div>';
+  });
+  document.getElementById('flights-content').innerHTML = html;
+}
+renderFlightsPanel();
 
 // Trends
-var trendsHTML="";
-trends.forEach(function(t,i){
-  trendsHTML+="<div class='trend'><div style='font-size:10px;color:#5a7a8a'>"+(i+1)+" Trending</div><div style='font-size:13px;font-weight:bold;color:#1da1f2;margin:4px 0'>"+t.t+"</div><div style='font-size:10px;color:#6a8a9a'>"+t.c+" posts</div></div>";
-});
-document.getElementById("trends").innerHTML=trendsHTML;
+function renderTrends() {
+  var html = '';
+  trends.forEach(function(t, i) {
+    html += '<div style="padding:10px;margin-bottom:5px;border-radius:5px;cursor:pointer;transition:all 0.2s;border-left:3px solid transparent" onclick="window.open(\'' + t.url + '\',\'_blank\')" onmouseover="this.style.background=\'rgba(29,161,242,0.15)\';this.style.borderLeftColor=\'#1da1f2\'" onmouseout="this.style.background=\'transparent\';this.style.borderLeftColor=\'transparent\'">' +
+      '<div style="font-size:9px;color:#5a7a8a">' + (i+1) + ' • Trending on X</div>' +
+      '<div style="font-size:13px;font-weight:bold;color:#1da1f2;margin:4px 0">' + t.t + '</div>' +
+      '<div style="font-size:10px;color:#6a8a9a">' + t.c + '</div></div>';
+  });
+  document.getElementById('trends-content').innerHTML = html;
+}
+renderTrends();
 
 // Clock
-setInterval(function(){
-  document.getElementById("clock").textContent="UTC: "+new Date().toUTCString().split(" ")[4];
-},1000);
+setInterval(function() {
+  var now = new Date();
+  document.getElementById('clock').textContent = 'UTC ' + now.toUTCString().split(' ')[4];
+}, 1000);
 
-// Init
-draw();
+// Initialize
+createMarkers();
+createConnections();
+createFlights();
 </script>
 </body>
 </html>

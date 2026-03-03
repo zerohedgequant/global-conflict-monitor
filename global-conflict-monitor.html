@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroHedgeQuant | ZerohedgeQuantbyShrey</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'JetBrains Mono',monospace;background:#080d14;color:#c8d8e8}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#0a1520}::-webkit-scrollbar-thumb{background:#1a3a4a;border-radius:3px}
+::selection{background:rgba(0,170,255,0.3)}
+
+/* HEADER */
+.header{height:42px;background:linear-gradient(90deg,#0a1520,#0d1a28,#0a1520);display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #1a2a3a;z-index:1000;position:relative}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:13px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,#ff3333,#ff6644,#ffaa00);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.live-dot{width:8px;height:8px;background:#ff3333;border-radius:50%;animation:livePulse 1.5s infinite}
+.live-tag{font-size:9px;color:#ff4444;letter-spacing:2px;font-weight:600}
+.header-center{display:flex;gap:20px;font-size:10px;color:#5a7a8a}
+.header-center span{display:flex;align-items:center;gap:4px}
+.header-center .val{color:#00ccff;font-weight:600}
+.header-right{display:flex;align-items:center;gap:10px;font-size:10px}
+.clock{color:#00ccff;font-weight:600;font-size:11px}
+.defcon{padding:2px 8px;border-radius:3px;font-weight:700;font-size:9px;letter-spacing:1px}
+.defcon-2{background:rgba(255,50,50,0.2);color:#ff4444;border:1px solid #ff4444}
+
+/* STATS BAR */
+.stats-bar{height:32px;background:#060a10;display:flex;align-items:center;justify-content:center;gap:30px;border-bottom:1px solid #111a24;font-size:10px}
+.stat{display:flex;align-items:center;gap:6px}
+.stat-dot{width:6px;height:6px;border-radius:50%}
+.stat-label{color:#4a6a7a}
+.stat-val{font-weight:600}
+
+/* MAIN LAYOUT */
+.main{display:flex;height:calc(100% - 74px)}
+
+/* LEFT SIDEBAR */
+.sidebar-left{width:300px;background:#0a1218;border-right:1px solid #1a2a3a;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-section{border-bottom:1px solid #111a24}
+.section-header{padding:8px 12px;font-size:9px;letter-spacing:2px;color:#3a6a7a;font-weight:600;display:flex;justify-content:between;align-items:center;background:#080e14}
+.section-header .count{margin-left:auto;background:rgba(255,50,50,0.15);color:#ff5555;padding:1px 6px;border-radius:8px;font-size:9px}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:0;padding:0 8px;background:#060a10;border-bottom:1px solid #111a24}
+.filter-tab{padding:6px 10px;font-size:9px;color:#4a6a7a;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s}
+.filter-tab:hover{color:#8aa8b8}
+.filter-tab.active{color:#00ccff;border-bottom-color:#00ccff}
+
+/* CONFLICT LIST */
+.conflict-list{flex:1;overflow-y:auto;padding:4px 0}
+.conflict-item{padding:8px 12px;cursor:pointer;border-left:3px solid transparent;transition:all 0.2s;display:flex;align-items:flex-start;gap:8px}
+.conflict-item:hover{background:rgba(0,170,255,0.05);border-left-color:#00aaff}
+.conflict-item.active-war{border-left-color:#ff3333}
+.ci-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;animation:dotPulse 2s infinite}
+.ci-info{flex:1;min-width:0}
+.ci-name{font-size:11px;font-weight:600;color:#d0dce8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-detail{font-size:9px;color:#4a6a7a;margin-top:2px;line-height:1.3}
+.ci-tags{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap}
+.ci-tag{font-size:8px;padding:1px 5px;border-radius:3px;background:rgba(0,170,255,0.1);color:#4a8aaa}
+.ci-tag.hot{background:rgba(255,50,50,0.15);color:#ff6666}
+.ci-tag.new{background:rgba(255,170,0,0.15);color:#ffaa00}
+
+/* MAP */
+.map-container{flex:1;position:relative}
+#map{width:100%;height:100%;background:#080d14}
+.leaflet-tile-pane{filter:saturate(0.3) brightness(0.7)}
+.map-controls{position:absolute;top:10px;right:10px;z-index:999;display:flex;flex-direction:column;gap:4px}
+.map-btn{width:32px;height:32px;background:rgba(10,21,32,0.9);border:1px solid #1a3a4a;color:#5a8a9a;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;border-radius:4px;transition:all 0.2s}
+.map-btn:hover{background:rgba(0,170,255,0.15);color:#00ccff;border-color:#00aaff}
+.map-btn.active{background:rgba(0,170,255,0.2);color:#00ccff}
+
+/* MAP OVERLAYS */
+.map-overlay-bottom{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:999;display:flex;gap:8px}
+.map-style-btn{padding:4px 10px;font-size:9px;background:rgba(10,21,32,0.9);border:1px solid #1a3a4a;color:#5a8a9a;cursor:pointer;border-radius:3px;font-family:'JetBrains Mono',monospace;transition:all 0.2s}
+.map-style-btn:hover,.map-style-btn.active{background:rgba(0,170,255,0.2);color:#00ccff;border-color:#00aaff}
+
+/* RIGHT SIDEBAR */
+.sidebar-right{width:340px;background:#0a1218;border-left:1px solid #1a2a3a;display:flex;flex-direction:column;overflow:hidden}
+.right-tabs{display:flex;background:#060a10;border-bottom:1px solid #111a24}
+.right-tab{flex:1;padding:8px;font-size:9px;letter-spacing:1px;color:#4a6a7a;cursor:pointer;text-align:center;border-bottom:2px solid transparent;transition:all 0.2s}
+.right-tab:hover{color:#8aa8b8}
+.right-tab.active{color:#00ccff;border-bottom-color:#00ccff}
+.right-panel{flex:1;overflow-y:auto;display:none}
+.right-panel.active{display:block}
+
+/* LIVE FEED */
+.feed-item{padding:8px 12px;border-bottom:1px solid #0d1820;cursor:pointer;transition:all 0.2s;border-left:3px solid transparent}
+.feed-item:hover{background:rgba(0,170,255,0.05)}
+.feed-item.breaking{border-left-color:#ff3333;background:rgba(255,30,30,0.04)}
+.feed-item.alert{border-left-color:#ffaa00}
+.feed-item.update{border-left-color:#00ccff}
+.fi-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.fi-badge{font-size:8px;padding:1px 5px;border-radius:3px;font-weight:600;letter-spacing:0.5px}
+.fi-badge.breaking{background:rgba(255,50,50,0.2);color:#ff4444}
+.fi-badge.alert{background:rgba(255,170,0,0.2);color:#ffaa00}
+.fi-badge.update{background:rgba(0,200,255,0.15);color:#00ccff}
+.fi-badge.intel{background:rgba(100,50,255,0.15);color:#8866ff}
+.fi-time{font-size:9px;color:#3a5a6a}
+.fi-text{font-size:11px;color:#b0c0d0;line-height:1.4}
+.fi-source{font-size:9px;color:#3a6a7a;margin-top:3px}
+.fi-source a{color:#2a8aaa;text-decoration:none}
+.fi-source a:hover{text-decoration:underline;color:#00ccff}
+
+/* POLYMARKET PANEL */
+.poly-item{padding:10px 12px;border-bottom:1px solid #0d1820}
+.poly-question{font-size:11px;color:#c0d0e0;font-weight:500;margin-bottom:6px}
+.poly-bar-wrap{height:20px;background:#0d1820;border-radius:3px;overflow:hidden;position:relative;margin-bottom:4px}
+.poly-bar{height:100%;border-radius:3px;transition:width 0.5s}
+.poly-bar-label{position:absolute;right:6px;top:2px;font-size:10px;font-weight:600}
+.poly-meta{display:flex;justify-content:space-between;font-size:9px;color:#3a6a7a}
+.poly-vol{color:#5a8a9a}
+
+/* FLIGHT RADAR */
+.flight-item{padding:8px 12px;border-bottom:1px solid #0d1820;display:flex;align-items:center;gap:10px}
+.fl-icon{font-size:16px;opacity:0.7}
+.fl-info{flex:1}
+.fl-callsign{font-size:11px;font-weight:600;color:#c0d0e0}
+.fl-route{font-size:9px;color:#4a6a7a}
+.fl-type{font-size:9px;color:#3a6a7a;text-align:right}
+.fl-alt{font-size:9px;color:#2a8aaa}
+
+/* TWITTER TRENDS */
+.trend-item{padding:8px 12px;border-bottom:1px solid #0d1820;cursor:pointer;transition:all 0.2s}
+.trend-item:hover{background:rgba(29,161,242,0.05)}
+.trend-rank{font-size:9px;color:#4a6a7a}
+.trend-topic{font-size:12px;font-weight:600;color:#1da1f2;margin:2px 0}
+.trend-count{font-size:9px;color:#5a7a8a}
+.trend-context{font-size:9px;color:#4a6a7a;margin-top:2px;line-height:1.3}
+
+/* POLITICAL EVENTS */
+.event-item{padding:8px 12px;border-bottom:1px solid #0d1820;border-left:3px solid transparent}
+.event-item.critical{border-left-color:#ff3333}
+.event-item.major{border-left-color:#ffaa00}
+.event-item.upcoming{border-left-color:#00ccff}
+.ev-date{font-size:9px;color:#3a6a7a;margin-bottom:2px}
+.ev-title{font-size:11px;color:#c0d0e0;font-weight:500;line-height:1.3}
+.ev-region{font-size:9px;color:#2a8aaa;margin-top:2px}
+
+/* CONNECTION LINES LEGEND */
+.legend{position:absolute;bottom:50px;left:10px;z-index:999;background:rgba(10,21,32,0.92);border:1px solid #1a3a4a;border-radius:4px;padding:8px 10px;font-size:9px}
+.legend-title{color:#5a8a9a;margin-bottom:4px;letter-spacing:1px;font-weight:600}
+.legend-row{display:flex;align-items:center;gap:6px;padding:2px 0;color:#6a8a9a}
+.legend-line{width:16px;height:2px;border-radius:1px}
+
+/* ANIMATIONS */
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeFlash{0%{background:rgba(255,50,50,0.15)}100%{background:transparent}}
+.new-item{animation:slideIn 0.3s ease,fadeFlash 2s ease}
+
+/* MARKER STYLES */
+.conflict-marker{border-radius:50%;border:2px solid;animation:markerPulse 2s infinite;cursor:pointer;position:relative}
+.conflict-marker::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border-radius:50%;border:1px solid;opacity:0.3;animation:markerRing 2s infinite}
+@keyframes markerPulse{0%,100%{box-shadow:0 0 4px currentColor}50%{box-shadow:0 0 12px currentColor,0 0 20px currentColor}}
+@keyframes markerRing{0%{transform:scale(1);opacity:0.3}100%{transform:scale(1.8);opacity:0}}
+
+/* TOOLTIP */
+.leaflet-popup-content-wrapper{background:rgba(10,21,32,0.95)!important;border:1px solid #1a3a4a!important;border-radius:6px!important;color:#c8d8e8!important;font-family:'JetBrains Mono',monospace!important}
+.leaflet-popup-tip{background:rgba(10,21,32,0.95)!important;border:1px solid #1a3a4a!important}
+.popup-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.popup-status{font-size:10px;margin-bottom:6px;display:flex;align-items:center;gap:4px}
+.popup-detail{font-size:10px;color:#7a9aaa;line-height:1.4;margin-bottom:4px}
+.popup-link{font-size:9px;color:#2a8aaa;text-decoration:none;display:block;margin-top:4px}
+.popup-link:hover{color:#00ccff;text-decoration:underline}
+.popup-casualties{font-size:10px;color:#ff6666;margin-top:4px;padding-top:4px;border-top:1px solid #1a2a3a}
+
+/* AIRCRAFT MARKERS */
+.aircraft-marker{color:#00ccff;font-size:14px;text-shadow:0 0 6px #00ccff;animation:aircraftBlink 3s infinite;cursor:pointer}
+@keyframes aircraftBlink{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* STRIKE MARKERS */
+.strike-marker{width:12px;height:12px;background:radial-gradient(circle,#ff4444,#ff0000);border-radius:50%;animation:strikePulse 0.8s infinite;border:1px solid #ff6666}
+@keyframes strikePulse{0%,100%{box-shadow:0 0 4px #ff0000,0 0 8px #ff0000}50%{box-shadow:0 0 12px #ff0000,0 0 24px #ff0000,0 0 36px rgba(255,0,0,0.3)}}
+
+/* RESPONSIVE */
+@media(max-width:1200px){.sidebar-left{width:240px}.sidebar-right{width:280px}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span class="logo">ZerohedgeQuantbyShrey</span>
+    <span class="live-dot"></span>
+    <span class="live-tag">LIVE</span>
+  </div>
+  <div class="header-center">
+    <span>ACTIVE WARS <span class="val" id="activeCount">9</span></span>
+    <span>TENSION ZONES <span class="val" id="tensionCount">14</span></span>
+    <span>CASUALTIES 24H <span class="val" style="color:#ff5555" id="cas24h">~1,240</span></span>
+    <span>DISPLACED <span class="val" style="color:#ffaa00">117.3M</span></span>
+  </div>
+  <div class="header-right">
+    <span class="defcon defcon-2">ELEVATED THREAT</span>
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat"><span class="stat-dot" style="background:#ff3333"></span><span class="stat-label">Iran-US/Israel</span><span class="stat-val" style="color:#ff3333">ACTIVE STRIKES</span></div>
+  <div class="stat"><span class="stat-dot" style="background:#ff5533"></span><span class="stat-label">Ukraine-Russia</span><span class="stat-val" style="color:#ff5533">Day 1,467</span></div>
+  <div class="stat"><span class="stat-dot" style="background:#ff7733"></span><span class="stat-label">Sudan</span><span class="stat-val" style="color:#ff7733">CRITICAL</span></div>
+  <div class="stat"><span class="stat-dot" style="background:#ffaa00"></span><span class="stat-label">Gaza</span><span class="stat-val" style="color:#ffaa00">CEASEFIRE FRAGILE</span></div>
+  <div class="stat"><span class="stat-dot" style="background:#00ccff"></span><span class="stat-label">Polymarket</span><span class="stat-val" style="color:#00ccff">Iran ceasefire Apr 30: 68%</span></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- LEFT SIDEBAR -->
+<aside class="sidebar-left">
+  <div class="sidebar-section">
+    <div class="section-header">CONFLICT ZONES <span class="count" id="conflictTotal">28</span></div>
+  </div>
+  <div class="filter-tabs">
+    <div class="filter-tab active" data-filter="all">ALL</div>
+    <div class="filter-tab" data-filter="active">ACTIVE</div>
+    <div class="filter-tab" data-filter="tension">TENSION</div>
+    <div class="filter-tab" data-filter="frozen">FROZEN</div>
+  </div>
+  <div class="conflict-list" id="conflictList"></div>
+</aside>
+
+<!-- MAP -->
+<div class="map-container">
+  <div id="map"></div>
+  <div class="map-controls">
+    <div class="map-btn" onclick="map.zoomIn()" title="Zoom In">+</div>
+    <div class="map-btn" onclick="map.zoomOut()" title="Zoom Out">-</div>
+    <div class="map-btn" onclick="map.setView([20,10],2.5)" title="Reset View">&#8962;</div>
+    <div class="map-btn" id="toggleConnections" onclick="toggleConnections()" title="Toggle Connections">&#9670;</div>
+    <div class="map-btn" id="toggleFlights" onclick="toggleFlights()" title="Toggle Aircraft">&#9992;</div>
+    <div class="map-btn" id="toggleStrikes" onclick="toggleStrikes()" title="Toggle Strike Zones">&#9733;</div>
+  </div>
+  <div class="map-overlay-bottom">
+    <div class="map-style-btn active" data-style="dark">DARK</div>
+    <div class="map-style-btn" data-style="satellite">SATELLITE</div>
+    <div class="map-style-btn" data-style="terrain">TERRAIN</div>
+    <div class="map-style-btn" data-style="osm">STREETS</div>
+  </div>
+  <div class="legend" id="legend">
+    <div class="legend-title">CONNECTIONS</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ff4444"></span> Proxy War</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ffaa00"></span> Arms Flow</div>
+    <div class="legend-row"><span class="legend-line" style="background:#00ccff"></span> Alliance</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ff66ff"></span> Spillover</div>
+    <div class="legend-row"><span class="legend-line" style="background:#66ff66"></span> Peace Talks</div>
+    <div class="legend-row"><span class="legend-line" style="background:#ff8800"></span> Active Strikes</div>
+  </div>
+</div>
+
+<!-- RIGHT SIDEBAR -->
+<aside class="sidebar-right">
+  <div class="right-tabs">
+    <div class="right-tab active" data-panel="feed">LIVE FEED</div>
+    <div class="right-tab" data-panel="polymarket">POLYMARKET</div>
+    <div class="right-tab" data-panel="flights">FLIGHTS</div>
+    <div class="right-tab" data-panel="trends">TRENDS</div>
+    <div class="right-tab" data-panel="events">EVENTS</div>
+  </div>
+
+  <!-- LIVE FEED -->
+  <div class="right-panel active" id="panel-feed"></div>
+
+  <!-- POLYMARKET -->
+  <div class="right-panel" id="panel-polymarket"></div>
+
+  <!-- FLIGHTS -->
+  <div class="right-panel" id="panel-flights"></div>
+
+  <!-- TRENDS -->
+  <div class="right-panel" id="panel-trends"></div>
+
+  <!-- EVENTS -->
+  <div class="right-panel" id="panel-events"></div>
+</aside>
+
+</div>
+
+<script>
+// ===== DATA =====
+
+const conflicts = [
+  // ACTIVE WARS
+  {id:1,name:"Iran - US/Israel Strikes",lat:35.69,lng:51.39,intensity:5,type:"active",region:"Middle East",status:"ACTIVE COMBAT",detail:"US-Israel launched joint strikes Feb 28. Supreme Leader Khamenei killed. 2000+ targets hit. Iran retaliating with missiles on Israel, US bases in Gulf. 550+ killed.",casualties:"550+ killed (Iran Red Crescent)",tags:["BREAKING","NEW"],news:"https://www.reuters.com",color:"#ff0000"},
+  {id:2,name:"Ukraine-Russia War",lat:48.38,lng:35.17,intensity:5,type:"active",region:"Europe",status:"DAY 1,467",detail:"Russia lost 1,266,770 troops total. Ukraine regained 400 sq km in south. Winter 2025-26 saw 14,670 guided bombs, 738 missiles, 19,000 drones from Russia.",casualties:"870 Russian casualties/day",tags:["ONGOING"],news:"https://kyivindependent.com",color:"#ff3333"},
+  {id:3,name:"Sudan Civil War",lat:15.50,lng:32.56,intensity:5,type:"active",region:"Africa",status:"CRITICAL",detail:"RSF seized El Fasher in Darfur. Killing spree documented. 11.8M displaced. Army vs RSF + foreign mercenaries since Apr 2023.",casualties:"Est. 150,000+ dead",tags:["CRISIS"],news:"https://www.aljazeera.com/tag/sudan/",color:"#ff3333"},
+  {id:4,name:"Myanmar Civil War",lat:19.76,lng:96.07,intensity:4,type:"active",region:"Asia",status:"ACTIVE",detail:"Resistance forces gaining territory from junta. Multiple ethnic armed organizations advancing. Junta losing control of border areas.",casualties:"Thousands killed",tags:["ONGOING"],news:"https://www.reuters.com",color:"#ff4444"},
+  {id:5,name:"Gaza Conflict",lat:31.35,lng:34.31,intensity:4,type:"active",region:"Middle East",status:"FRAGILE CEASEFIRE",detail:"Phase 2 ceasefire holding but fragile. Gaza de facto partitioned. Israel controls >50% territory. Hamas reasserted presence. Renewed strikes on Lebanon.",casualties:"1.9M displaced",tags:["CEASEFIRE"],news:"https://www.aljazeera.com/tag/gaza/",color:"#ff5533"},
+  {id:6,name:"Yemen Crisis",lat:15.55,lng:48.52,intensity:4,type:"active",region:"Middle East",status:"ACTIVE",detail:"Southern Transitional Council dissolved Jan 2026. Houthi attacks on shipping continue. US strikes ongoing.",casualties:"377,000+ dead (total)",tags:["ONGOING"],news:"https://www.reuters.com",color:"#ff4444"},
+  {id:7,name:"DR Congo - Eastern Provinces",lat:-1.68,lng:29.22,intensity:4,type:"active",region:"Africa",status:"ACTIVE",detail:"Rwanda via rebel proxies effectively annexed North and South Kivu provinces. M23 advances continue.",casualties:"6M+ displaced",tags:["CRISIS"],news:"https://www.bbc.com/news/topics/c77jz3md4v3t",color:"#ff4444"},
+  {id:8,name:"Syria",lat:34.80,lng:38.99,intensity:3,type:"active",region:"Middle East",status:"POST-ASSAD",detail:"Ongoing violence and instability. Multiple armed factions. Reconstruction stalled. Potential Iranian retaliation spillover.",casualties:"500,000+ total conflict",tags:["ONGOING"],news:"https://www.reuters.com",color:"#ff5544"},
+  {id:9,name:"Lebanon - Israel Renewed Strikes",lat:33.89,lng:35.50,intensity:4,type:"active",region:"Middle East",status:"ACTIVE STRIKES",detail:"Israel launched renewed airstrikes on Beirut suburbs and southern Lebanon. 31 killed, 150 wounded Mar 2. Hezbollah retaliated for Khamenei killing.",casualties:"31+ killed Mar 2",tags:["BREAKING","NEW"],news:"https://www.aljazeera.com",color:"#ff2222"},
+  // TENSION ZONES
+  {id:10,name:"Taiwan Strait",lat:23.70,lng:120.96,intensity:3,type:"tension",region:"Asia-Pacific",status:"HIGH TENSION",detail:"Even chance of crisis in 2026 per CFR. China accelerating military modernization. 15th Five-Year Plan launching March.",casualties:"N/A",tags:["WATCH"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:11,name:"Ethiopia-Eritrea Border",lat:14.00,lng:39.50,intensity:3,type:"tension",region:"Africa",status:"ESCALATING",detail:"Addis Ababa and Asmara edging toward war. Ethiopia seeks sea access, Eritrea fears reconquest of ports. Training rival militias.",casualties:"N/A",tags:["WATCH","NEW"],news:"https://www.crisisgroup.org",color:"#ffaa00"},
+  {id:12,name:"South China Sea",lat:14.50,lng:115.00,intensity:2,type:"tension",region:"Asia-Pacific",status:"CONTESTED",detail:"Chinese maritime claims contested. Philippines clashes. Military buildup continues.",casualties:"N/A",tags:["WATCH"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:13,name:"India-Pakistan LoC",lat:34.50,lng:74.50,intensity:3,type:"tension",region:"South Asia",status:"WORST EXCHANGE IN DECADES",detail:"Worst exchange of fire in decades between India and Pakistan. Tensions remain elevated.",casualties:"Multiple",tags:["ELEVATED"],news:"https://www.bbc.com",color:"#ffaa00"},
+  {id:14,name:"Haiti Gang Violence",lat:18.54,lng:-72.34,intensity:3,type:"active",region:"Americas",status:"LAWLESS",detail:"Gang turf battles raging. Transitional council dissolved Feb 2026. Executive power to acting PM Fils-Aime.",casualties:"Thousands",tags:["CRISIS"],news:"https://www.reuters.com",color:"#ff6644"},
+  {id:15,name:"Sahel Region",lat:14.00,lng:2.00,intensity:3,type:"active",region:"Africa",status:"SPREADING",detail:"Jihadist insurgency spreading across Mali, Burkina Faso, Niger. Wagner/Africa Corps presence. 20 of 39 World Bank fragile states in Africa.",casualties:"Thousands annually",tags:["ONGOING"],news:"https://www.reuters.com",color:"#ff6644"},
+  {id:16,name:"Pakistan-Afghanistan Border",lat:33.00,lng:69.50,intensity:2,type:"tension",region:"South Asia",status:"CROSS-BORDER CLASHES",detail:"Continued cross-border clashes. Mosque bombing in Islamabad killed 31+ (Feb 6, 2026).",casualties:"31+ (Feb bombing)",tags:["ELEVATED"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:17,name:"Somalia - Al-Shabaab",lat:2.05,lng:45.32,intensity:3,type:"active",region:"Africa",status:"ACTIVE",detail:"Al-Shabaab attacks continue despite African peacekeeping. Territory control contested.",casualties:"Ongoing",tags:["ONGOING"],news:"https://www.bbc.com",color:"#ff6644"},
+  {id:18,name:"Greenland Tensions",lat:72.00,lng:-40.00,intensity:2,type:"tension",region:"Arctic",status:"MILITARY DEPLOYMENT",detail:"Denmark launched Operation Arctic Endurance (Jan 14). Multiple European nations deployed troops after US annexation threats.",casualties:"N/A",tags:["NEW","WATCH"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:19,name:"Venezuela Political Crisis",lat:10.49,lng:-66.88,intensity:2,type:"tension",region:"Americas",status:"POST-INTERVENTION",detail:"Maduro captured by US forces Jan 3. Delcy Rodriguez sworn as acting president Jan 5. Maria Corina Machado plans return.",casualties:"Multiple in strikes",tags:["DEVELOPING"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:20,name:"North Korea Nuclear",lat:39.03,lng:125.75,intensity:2,type:"tension",region:"Asia",status:"MONITORED",detail:"Nuclear program advancing. Missile tests continue. Troops reportedly deployed to Russia.",casualties:"N/A",tags:["WATCH"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:21,name:"Nigeria - Boko Haram",lat:11.85,lng:13.16,intensity:3,type:"active",region:"Africa",status:"ACTIVE ATTACKS",detail:"Boko Haram attacked two villages in Kwara State killing 162+ people (Feb 3, 2026).",casualties:"162+ (Feb 3 attack)",tags:["NEW"],news:"https://www.reuters.com",color:"#ff5544"},
+  {id:22,name:"Thailand-Cambodia Border",lat:14.36,lng:103.86,intensity:2,type:"tension",region:"Asia",status:"BORDER CLASHES",detail:"Cross-border clashes along disputed border. New Thai constitution adopted.",casualties:"Multiple",tags:["ELEVATED"],news:"https://www.reuters.com",color:"#ffaa00"},
+  // FROZEN/MONITORING
+  {id:23,name:"Kosovo-Serbia",lat:42.66,lng:21.17,intensity:1,type:"frozen",region:"Europe",status:"FROZEN",detail:"Tensions simmer. EU-mediated dialogue stalled. Northern Kosovo flashpoints persist.",casualties:"N/A",tags:[],news:"https://www.reuters.com",color:"#4488ff"},
+  {id:24,name:"Armenia-Azerbaijan",lat:40.18,lng:44.51,intensity:1,type:"frozen",region:"Caucasus",status:"POST-WAR",detail:"Post-Nagorno-Karabakh takeover. Armenia adjusting to new reality. Border demarcation ongoing.",casualties:"N/A",tags:[],news:"https://www.reuters.com",color:"#4488ff"},
+  {id:25,name:"Western Sahara",lat:24.22,lng:-12.88,intensity:1,type:"frozen",region:"Africa",status:"FROZEN",detail:"Polisario vs Morocco dispute continues. Low-level hostilities resumed 2020.",casualties:"N/A",tags:[],news:"https://www.reuters.com",color:"#4488ff"},
+  {id:26,name:"Iraq Instability",lat:33.31,lng:44.37,intensity:2,type:"tension",region:"Middle East",status:"PMF TARGETED",detail:"4 Popular Mobilization Forces members killed in airstrike in Diyala. Iranian retaliation spillover risk.",casualties:"4+ (recent strikes)",tags:["NEW"],news:"https://www.reuters.com",color:"#ffaa00"},
+  {id:27,name:"Pakistan Anti-US Protests",lat:24.86,lng:67.01,intensity:2,type:"tension",region:"South Asia",status:"UNREST",detail:"Hundreds stormed US consulate in Karachi. 22+ killed in clashes with security forces. UN offices torched.",casualties:"22+ killed",tags:["BREAKING","NEW"],news:"https://www.reuters.com",color:"#ff8844"},
+  {id:28,name:"Cuba - US Tensions",lat:23.11,lng:-82.37,intensity:1,type:"tension",region:"Americas",status:"FUEL BLOCKADE",detail:"Trump suggested 'friendly takeover of Cuba'. US fuel blockade in effect.",casualties:"N/A",tags:["NEW"],news:"https://www.reuters.com",color:"#ffaa00"},
+];
+
+// STRIKE ZONES (Iran conflict Feb 28-Mar 2)
+const strikeZones = [
+  {lat:35.69,lng:51.39,name:"Tehran - Khamenei Compound",detail:"Supreme Leader killed Feb 28"},
+  {lat:35.72,lng:51.42,name:"Tehran - IRGC Facilities",detail:"Multiple IRGC/Basij facilities hit"},
+  {lat:35.68,lng:51.44,name:"Narmak - Ahmadinejad Home",detail:"Former president reportedly killed"},
+  {lat:32.65,lng:51.68,name:"Isfahan - Nuclear Facilities",detail:"Nuclear infrastructure targeted"},
+  {lat:27.18,lng:56.25,name:"Bandar Abbas - Naval Base",detail:"Iranian naval facilities struck"},
+  {lat:25.25,lng:60.63,name:"Chabahar Port",detail:"IRIS Jamaran frigate sunk"},
+  {lat:31.77,lng:35.21,name:"Beit Shemesh - Iran Retaliation",detail:"Iranian missile strike, 9 killed"},
+  {lat:24.45,lng:54.65,name:"Abu Dhabi - Drone Strike",detail:"Shahed drones hit French naval base"},
+  {lat:34.59,lng:32.98,name:"RAF Akrotiri - Cyprus",detail:"Iranian drone hit British base"},
+];
+
+// CONNECTIONS
+const connections = [
+  {from:[35.69,51.39],to:[31.77,35.21],type:"strikes",color:"#ff8800",label:"Iran→Israel Missiles"},
+  {from:[38.90,-77.04],to:[35.69,51.39],type:"strikes",color:"#ff8800",label:"US→Iran Strikes"},
+  {from:[31.77,35.21],to:[35.69,51.39],type:"strikes",color:"#ff8800",label:"Israel→Iran Strikes"},
+  {from:[31.77,35.21],to:[33.89,35.50],type:"strikes",color:"#ff8800",label:"Israel→Lebanon Strikes"},
+  {from:[35.69,51.39],to:[24.45,54.65],type:"strikes",color:"#ff8800",label:"Iran→UAE Drones"},
+  {from:[35.69,51.39],to:[34.59,32.98],type:"strikes",color:"#ff8800",label:"Iran→Cyprus Drone"},
+  {from:[55.75,37.62],to:[48.38,35.17],type:"proxy",color:"#ff4444",label:"Russia→Ukraine Invasion"},
+  {from:[35.69,51.39],to:[15.55,48.52],type:"proxy",color:"#ff4444",label:"Iran→Houthi Support"},
+  {from:[35.69,51.39],to:[33.89,35.50],type:"proxy",color:"#ff4444",label:"Iran→Hezbollah"},
+  {from:[38.90,-77.04],to:[48.38,35.17],type:"alliance",color:"#00ccff",label:"US→Ukraine Intel"},
+  {from:[50.85,4.35],to:[48.38,35.17],type:"alliance",color:"#00ccff",label:"EU→Ukraine Aid"},
+  {from:[39.92,116.40],to:[55.75,37.62],type:"alliance",color:"#6688ff",label:"China-Russia Axis"},
+  {from:[15.50,32.56],to:[14.00,39.50],type:"spillover",color:"#ff66ff",label:"Sudan→Horn Spillover"},
+  {from:[55.75,37.62],to:[35.69,51.39],type:"alliance",color:"#6688ff",label:"Russia-Iran (limited)"},
+  {from:[48.38,35.17],to:[59.33,18.07],type:"spillover",color:"#ff66ff",label:"Russia→Sweden Drones"},
+];
+
+// AIRCRAFT
+const aircraft = [
+  {callsign:"FORTE12",type:"RQ-4 Global Hawk",from:[40.80,14.30],to:[33.00,35.00],alt:"55,000ft",role:"ISR - Mediterranean"},
+  {callsign:"DUKE01",type:"KC-135 Stratotanker",from:[25.25,55.36],to:[27.00,57.00],alt:"32,000ft",role:"Refueling - Persian Gulf"},
+  {callsign:"NCHO741",type:"E-3 Sentry AWACS",from:[32.90,35.29],to:[35.00,42.00],alt:"34,000ft",role:"AEW - Iran Ops"},
+  {callsign:"RCH884",type:"C-17 Globemaster",from:[49.01,2.55],to:[25.25,55.36],alt:"36,000ft",role:"Airlift - Gulf"},
+  {callsign:"HOMER51",type:"B-52H Stratofortress",from:[21.35,-157.94],to:[25.25,55.36],alt:"42,000ft",role:"Strategic - Gulf Deploy"},
+  {callsign:"VIPER01",type:"F-35A Lightning",from:[31.24,34.27],to:[35.69,51.39],alt:"45,000ft",role:"Strike Package - Iran"},
+  {callsign:"REAPER6",type:"MQ-9 Reaper",from:[25.25,55.36],to:[27.18,56.25],alt:"25,000ft",role:"ISR/Strike - Hormuz"},
+  {callsign:"SIGINT3",type:"RC-135V Rivet Joint",from:[37.41,24.94],to:[34.00,48.00],alt:"38,000ft",role:"SIGINT - Iran"},
+  {callsign:"CVN72",type:"USS Abraham Lincoln",from:[16.00,63.00],to:[18.00,65.00],alt:"Sea Level",role:"Carrier Ops - Iranian strikes"},
+  {callsign:"SWEPT2",type:"Rafale M",from:[24.45,54.65],to:[26.00,56.00],alt:"35,000ft",role:"French Naval Air - Gulf"},
+];
+
+// LIVE FEED ITEMS
+const feedItems = [
+  {type:"breaking",badge:"BREAKING",text:"US begins 'major combat operations in Iran' — Trump announces. Day 2 of strikes hit 2,000+ targets.",time:"2 hours ago",source:"Axios",url:"https://www.axios.com"},
+  {type:"breaking",badge:"BREAKING",text:"Iran Supreme Leader Ali Khamenei confirmed killed in US-Israel strikes on Tehran. 40 days of mourning declared.",time:"3 hours ago",source:"Al Jazeera",url:"https://www.aljazeera.com"},
+  {type:"breaking",badge:"BREAKING",text:"IRGC launches missiles at USS Abraham Lincoln in Indian Ocean. 3 US service members killed, 5 wounded.",time:"4 hours ago",source:"BBC News",url:"https://www.bbc.com"},
+  {type:"breaking",badge:"BREAKING",text:"Israel renews airstrikes on Beirut & southern Lebanon. 31 killed, 150 wounded. Hezbollah retaliates for Khamenei.",time:"5 hours ago",source:"Al Jazeera",url:"https://www.aljazeera.com"},
+  {type:"alert",badge:"ALERT",text:"Iranian Shahed drones strike French naval air station in Abu Dhabi, UAE. Multiple explosions reported.",time:"6 hours ago",source:"The New Arab",url:"https://www.newarab.com"},
+  {type:"alert",badge:"ALERT",text:"RAF Akrotiri in Cyprus hit by Iranian drone. No casualties. UK's Starmer approves US strikes from British bases.",time:"6 hours ago",source:"Cyprus Mail",url:"https://www.cyprus-mail.com"},
+  {type:"breaking",badge:"BREAKING",text:"IRIS Jamaran (Iranian frigate) sunk by US forces off Chabahar Port. Iran retaliates with ballistic missiles at Israel.",time:"7 hours ago",source:"Reuters",url:"https://www.reuters.com"},
+  {type:"alert",badge:"ALERT",text:"9 killed in Iranian missile strike on Beit Shemesh near Jerusalem. IDF intercepts majority of incoming.",time:"7 hours ago",source:"Times of Israel",url:"https://www.timesofisrael.com"},
+  {type:"breaking",badge:"BREAKING",text:"22 killed as protesters storm US consulate in Karachi, Pakistan. UN offices torched. Security forces clashed.",time:"8 hours ago",source:"AP News",url:"https://apnews.com"},
+  {type:"alert",badge:"ALERT",text:"Belgium special forces seize Russian shadow fleet oil tanker 'Ethera' in North Sea with French naval assistance.",time:"9 hours ago",source:"Le Monde",url:"https://www.lemonde.fr"},
+  {type:"update",badge:"UPDATE",text:"Trump says Iran strikes could continue 4-5 weeks. Considers 'three good choices' for regime change including Maduro model.",time:"10 hours ago",source:"New York Times",url:"https://www.nytimes.com"},
+  {type:"intel",badge:"INTEL",text:"Polymarket trader 'Magamyman' made $553K betting on Khamenei's death just before strike. Insider trading suspected.",time:"11 hours ago",source:"NPR",url:"https://www.npr.org"},
+  {type:"update",badge:"UPDATE",text:"Ukraine's General Staff: Russia lost 1,266,770 troops total since Feb 2022. 870 casualties in past 24 hours.",time:"12 hours ago",source:"Ukrinform",url:"https://www.ukrinform.net"},
+  {type:"update",badge:"UPDATE",text:"Zelensky: Winter 2025-26 was toughest yet. 14,670 guided bombs, 738 missiles, 19,000 drones launched by Russia.",time:"13 hours ago",source:"Kyiv Independent",url:"https://kyivindependent.com"},
+  {type:"update",badge:"UPDATE",text:"Ukraine regained 400 sq km in southern territory since end of January. Commander Syrskii confirms gains.",time:"14 hours ago",source:"Al Jazeera",url:"https://www.aljazeera.com"},
+  {type:"alert",badge:"ALERT",text:"Russia-China condemn Iran strikes in emergency UN Security Council meeting. Call for immediate ceasefire.",time:"14 hours ago",source:"Reuters",url:"https://www.reuters.com"},
+  {type:"update",badge:"UPDATE",text:"Congress moves to take up War Powers Resolution after Trump begins bombing Iran without authorization.",time:"15 hours ago",source:"CBS News",url:"https://www.cbsnews.com"},
+  {type:"alert",badge:"ALERT",text:"Mass shooting in Austin, TX: 2 killed, 14 wounded. FBI investigating as possible terrorism. 58th mass shooting in 2026.",time:"16 hours ago",source:"AP News",url:"https://apnews.com"},
+  {type:"update",badge:"UPDATE",text:"IMF approves $8.1B four-year loan for Ukraine. Part of broader $136.5B international support package.",time:"18 hours ago",source:"Reuters",url:"https://www.reuters.com"},
+  {type:"intel",badge:"INTEL",text:"Ukraine strikes Russian S-300 radar stations and ammunition depot in occupied Donetsk. Drone footage released.",time:"20 hours ago",source:"General Staff UA",url:"https://kyivindependent.com"},
+  {type:"update",badge:"UPDATE",text:"Boko Haram killed 162+ in attacks on two villages in Kwara State, Nigeria (Feb 3). Violence spreading southward.",time:"1 day ago",source:"Reuters",url:"https://www.reuters.com"},
+  {type:"update",badge:"UPDATE",text:"NEW START nuclear treaty between US and Russia expired Feb 5. No replacement agreement in sight.",time:"2 days ago",source:"Reuters",url:"https://www.reuters.com"},
+  {type:"intel",badge:"INTEL",text:"Operation Arctic Endurance: Denmark + EU troops deployed to Greenland after Trump annexation threats (Jan 14).",time:"2 days ago",source:"Reuters",url:"https://www.reuters.com"},
+];
+
+// POLYMARKET DATA (as of March 2, 2026)
+const polymarketData = [
+  {question:"Iran x Israel/US conflict ends by...",options:[{label:"March 31",pct:48,vol:"$5.3M"},{label:"April 30",pct:68,vol:""},{label:"May 15",pct:63,vol:""},{label:"June 30",pct:72,vol:""}],total:"$5.3M traded"},
+  {question:"US x Iran ceasefire by...",options:[{label:"March 31",pct:48,vol:"$5.3M"},{label:"April 30",pct:68,vol:""}],total:"$5.3M traded"},
+  {question:"Will Iranian regime fall by June 30?",options:[{label:"Yes",pct:32,vol:"$4.4M"},{label:"No",pct:68,vol:""}],total:"$4.4M traded"},
+  {question:"Next Supreme Leader of Iran?",options:[{label:"Hassan Khomeini",pct:21,vol:""},{label:"Alireza Arafi",pct:18,vol:""},{label:"None by June 30",pct:35,vol:""}],total:"$4.4M traded"},
+  {question:"US strikes Iran on March 2?",options:[{label:"Yes",pct:100,vol:""},{label:"No",pct:0,vol:""}],total:"$4.9M traded"},
+  {question:"2026 Midterms — Dems win House?",options:[{label:"Yes",pct:72,vol:"$12M"},{label:"No",pct:28,vol:""}],total:"$12M traded"},
+  {question:"2026 Midterms — GOP keeps Senate?",options:[{label:"Yes",pct:55,vol:"$8M"},{label:"No",pct:45,vol:""}],total:"$8M traded"},
+  {question:"Ukraine ceasefire by Dec 31, 2026?",options:[{label:"Yes",pct:22,vol:"$3.1M"},{label:"No",pct:78,vol:""}],total:"$3.1M traded"},
+  {question:"Taiwan Strait military crisis 2026?",options:[{label:"Yes",pct:15,vol:"$2.2M"},{label:"No",pct:85,vol:""}],total:"$2.2M traded"},
+];
+
+// TWITTER TRENDS (Political/Conflict related)
+const twitterTrends = [
+  {rank:1,topic:"#IranStrikes",count:"4.2M",context:"US-Israel strikes on Iran continue for 3rd day. 2000+ targets. Supreme Leader killed."},
+  {rank:2,topic:"#WorldWarIII",count:"2.8M",context:"Trending as Iran retaliates against US and Israel. Multiple countries drawn into conflict."},
+  {rank:3,topic:"#Khamenei",count:"2.1M",context:"Iran confirms death of Supreme Leader. 40 days mourning. Succession crisis begins."},
+  {rank:4,topic:"#WarPowersAct",count:"1.4M",context:"Congress moves to invoke War Powers Resolution. 'War of choice' criticism from Sen. Warner."},
+  {rank:5,topic:"#StandWithIran",count:"980K",context:"Protests erupting worldwide. Karachi consulate stormed. Anti-war demonstrations in Europe."},
+  {rank:6,topic:"#Polymarket",count:"720K",context:"Trader made $553K on Khamenei death bet. Insider trading allegations. Trump Jr connection."},
+  {rank:7,topic:"#Ukraine",count:"650K",context:"War enters year 5. 400 sq km regained in south. Russia lost 1.27M troops total."},
+  {rank:8,topic:"#AustinShooting",count:"540K",context:"2 killed, 14 wounded at Austin bar. FBI investigating as potential terrorism."},
+  {rank:9,topic:"#Lebanon",count:"480K",context:"Israel renews strikes on Beirut. 31 killed. Hezbollah retaliates for Khamenei killing."},
+  {rank:10,topic:"#Greenland",count:"320K",context:"European troops deployed after Trump annexation threats. Denmark Operation Arctic Endurance."},
+  {rank:11,topic:"#ShadowFleet",count:"280K",context:"Belgium seizes Russian shadow fleet tanker in North Sea. First boarding operation."},
+  {rank:12,topic:"#Midterms2026",count:"240K",context:"November 3 elections approaching. Dems favored for House flip. Senate remains tight."},
+  {rank:13,topic:"#NEWSTART",count:"190K",context:"US-Russia nuclear treaty expired Feb 5. No arms control framework remaining."},
+  {rank:14,topic:"#Sudan",count:"170K",context:"RSF atrocities in Darfur. 11.8M displaced. World largely ignoring crisis."},
+  {rank:15,topic:"#Cuba",count:"150K",context:"Trump suggests 'friendly takeover'. US fuel blockade in effect."},
+];
+
+// POLITICAL EVENTS
+const politicalEvents = [
+  {date:"Mar 2, 2026",title:"US 'Major Combat Operations in Iran' — Day 3 of US-Israel strikes. 2000+ targets hit. Iran retaliating.",region:"Middle East",priority:"critical"},
+  {date:"Feb 28, 2026",title:"US-Israel launch joint strikes on Iran. Supreme Leader Khamenei killed. Multiple top officials dead.",region:"Middle East",priority:"critical"},
+  {date:"Mar 2, 2026",title:"22 killed as protesters storm US consulate in Karachi. UN offices torched across Pakistan.",region:"South Asia",priority:"critical"},
+  {date:"Mar 2, 2026",title:"Israel renews airstrikes on Lebanon. 31 killed, 150 wounded. Hezbollah fires missiles at Israel.",region:"Middle East",priority:"critical"},
+  {date:"Mar 2, 2026",title:"Austin, TX mass shooting: 2 killed, 14 wounded. FBI investigating as possible terrorism.",region:"Americas",priority:"major"},
+  {date:"Mar 1, 2026",title:"Iran launches missiles at USS Abraham Lincoln. 3 US service members killed.",region:"Middle East / Indian Ocean",priority:"critical"},
+  {date:"Feb 26, 2026",title:"Green Party wins UK Gorton & Denton by-election in shock result over Labour.",region:"Europe",priority:"major"},
+  {date:"Feb 24, 2026",title:"Ukraine marks 4th anniversary of invasion. 400 sq km regained in south. Russia lost 1.27M troops.",region:"Europe",priority:"major"},
+  {date:"Feb 12, 2026",title:"Bangladesh general election: BNP wins landslide victory.",region:"South Asia",priority:"major"},
+  {date:"Feb 6, 2026",title:"31 killed in suicide bombing at Khadija Tul Kubra Mosque, Islamabad.",region:"South Asia",priority:"critical"},
+  {date:"Feb 5, 2026",title:"NEW START nuclear treaty expires. No US-Russia arms control framework remains.",region:"Global",priority:"critical"},
+  {date:"Feb 3, 2026",title:"Boko Haram kills 162+ in attacks on villages in Kwara State, Nigeria.",region:"Africa",priority:"critical"},
+  {date:"Jan 14, 2026",title:"Operation Arctic Endurance: Denmark + EU deploy troops to Greenland after Trump threats.",region:"Arctic",priority:"major"},
+  {date:"Jan 3, 2026",title:"US forces capture Venezuelan president Maduro in airstrikes on northern Venezuela.",region:"Americas",priority:"critical"},
+  // UPCOMING
+  {date:"Mar 5, 2026",title:"Nepal general election — First since Gen Z-led revolt toppled government.",region:"South Asia",priority:"upcoming"},
+  {date:"Mar 8, 2026",title:"Colombia parliamentary election.",region:"Americas",priority:"upcoming"},
+  {date:"Mar 15, 2026",title:"Vietnam legislative election.",region:"Asia",priority:"upcoming"},
+  {date:"Mar 22, 2026",title:"Slovenia parliamentary election.",region:"Europe",priority:"upcoming"},
+  {date:"Mar 24, 2026",title:"Denmark general election.",region:"Europe",priority:"upcoming"},
+  {date:"Apr 2026",title:"Hungary, Peru, Benin elections.",region:"Global",priority:"upcoming"},
+  {date:"May 10, 2026",title:"Lebanon general election.",region:"Middle East",priority:"upcoming"},
+  {date:"Nov 3, 2026",title:"US Midterm Elections — All 435 House seats, 35 Senate seats on ballot.",region:"Americas",priority:"upcoming"},
+];
+
+// ===== INIT MAP =====
+const mapTiles = {
+  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  satellite:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  terrain:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  osm:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+};
+
+const map = L.map('map',{zoomControl:false,minZoom:2,maxZoom:18,worldCopyJump:true}).setView([25,42],3);
+let currentTileLayer = L.tileLayer(mapTiles.dark,{attribution:''}).addTo(map);
+let connectionLayer = L.layerGroup().addTo(map);
+let flightLayer = L.layerGroup().addTo(map);
+let strikeLayer = L.layerGroup().addTo(map);
+let showConnections = true, showFlights = true, showStrikes = true;
+let currentFilter = 'all';
+
+// ===== RENDER CONFLICT LIST =====
+function renderConflictList(){
+  const list = document.getElementById('conflictList');
+  list.innerHTML = '';
+  const filtered = conflicts.filter(c => currentFilter === 'all' || c.type === currentFilter);
+  document.getElementById('conflictTotal').textContent = filtered.length;
+  filtered.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'conflict-item' + (c.type==='active'?' active-war':'');
+    div.innerHTML = `
+      <span class="ci-dot" style="background:${c.color};box-shadow:0 0 6px ${c.color}"></span>
+      <div class="ci-info">
+        <div class="ci-name">${c.name}</div>
+        <div class="ci-detail">${c.status} · ${c.region}</div>
+        <div class="ci-tags">${c.tags.map(t => `<span class="ci-tag ${t==='BREAKING'||t==='CRISIS'?'hot':t==='NEW'?'new':''}">${t}</span>`).join('')}</div>
+      </div>`;
+    div.onclick = () => {
+      map.flyTo([c.lat,c.lng],6,{duration:1.5});
+      setTimeout(()=>{
+        const marker = conflictMarkers.find(m=>m.conflictId===c.id);
+        if(marker) marker.openPopup();
+      },1600);
+    };
+    list.appendChild(div);
+  });
+}
+
+// ===== RENDER MAP MARKERS =====
+let conflictMarkers = [];
+function renderMarkers(){
+  conflictMarkers.forEach(m=>map.removeLayer(m));
+  conflictMarkers = [];
+  conflicts.forEach(c => {
+    const size = c.intensity >= 5 ? 14 : c.intensity >= 4 ? 11 : c.intensity >= 3 ? 9 : 7;
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="conflict-marker" style="width:${size}px;height:${size}px;background:${c.color};border-color:${c.color};color:${c.color}"></div>`,
+      iconSize:[size,size],iconAnchor:[size/2,size/2]
+    });
+    const marker = L.marker([c.lat,c.lng],{icon}).addTo(map);
+    marker.conflictId = c.id;
+    marker.bindPopup(`
+      <div class="popup-title">${c.name}</div>
+      <div class="popup-status"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-right:4px"></span>${c.status}</div>
+      <div class="popup-detail">${c.detail}</div>
+      ${c.casualties?`<div class="popup-casualties">Casualties: ${c.casualties}</div>`:''}
+      <a class="popup-link" href="${c.news}" target="_blank">View Sources &rarr;</a>
+    `,{maxWidth:280});
+    conflictMarkers.push(marker);
+  });
+}
+
+// ===== RENDER CONNECTIONS =====
+function renderConnections(){
+  connectionLayer.clearLayers();
+  if(!showConnections) return;
+  connections.forEach(c => {
+    const line = L.polyline([c.from,[c.from[0]+(c.to[0]-c.from[0])*0.5+((Math.random()-0.5)*3),c.from[1]+(c.to[1]-c.from[1])*0.5],c.to],{
+      color:c.color,weight:1.5,opacity:0.5,dashArray:c.type==='strikes'?'4,4':'6,6',className:'animated-line'
+    }).addTo(connectionLayer);
+    line.bindTooltip(c.label,{sticky:true,className:'',opacity:0.8});
+  });
+}
+
+// ===== RENDER STRIKE ZONES =====
+function renderStrikeZones(){
+  strikeLayer.clearLayers();
+  if(!showStrikes) return;
+  strikeZones.forEach(s => {
+    const icon = L.divIcon({className:'',html:'<div class="strike-marker"></div>',iconSize:[12,12],iconAnchor:[6,6]});
+    L.marker([s.lat,s.lng],{icon}).addTo(strikeLayer).bindPopup(`<div class="popup-title">${s.name}</div><div class="popup-detail">${s.detail}</div>`,{maxWidth:220});
+    L.circle([s.lat,s.lng],{radius:20000,color:'#ff2200',fillColor:'#ff2200',fillOpacity:0.08,weight:1,opacity:0.3}).addTo(strikeLayer);
+  });
+}
+
+// ===== RENDER FLIGHTS =====
+let flightMarkerRefs = [];
+function renderFlights(){
+  flightLayer.clearLayers();
+  flightMarkerRefs = [];
+  if(!showFlights) return;
+  aircraft.forEach(a => {
+    const pos = [a.from[0]+(a.to[0]-a.from[0])*Math.random(),a.from[1]+(a.to[1]-a.from[1])*Math.random()];
+    const angle = Math.atan2(a.to[1]-a.from[1],a.to[0]-a.from[0])*180/Math.PI;
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="aircraft-marker" style="transform:rotate(${angle-90}deg)">&#9992;</div>`,
+      iconSize:[14,14],iconAnchor:[7,7]
+    });
+    const m = L.marker(pos,{icon}).addTo(flightLayer);
+    m.bindPopup(`<div class="popup-title">${a.callsign}</div><div class="popup-detail">${a.type}<br>${a.role}<br>Alt: ${a.alt}</div><a class="popup-link" href="https://www.flightradar24.com" target="_blank">Track on FlightRadar24 &rarr;</a>`,{maxWidth:240});
+    flightMarkerRefs.push({marker:m,from:a.from,to:a.to,progress:Math.random()});
+  });
+}
+
+// Animate flights
+function animateFlights(){
+  flightMarkerRefs.forEach(f => {
+    f.progress += 0.0003;
+    if(f.progress > 1) f.progress = 0;
+    const lat = f.from[0]+(f.to[0]-f.from[0])*f.progress;
+    const lng = f.from[1]+(f.to[1]-f.from[1])*f.progress;
+    f.marker.setLatLng([lat,lng]);
+  });
+  requestAnimationFrame(animateFlights);
+}
+
+// ===== RENDER PANELS =====
+function renderFeed(){
+  const panel = document.getElementById('panel-feed');
+  panel.innerHTML = feedItems.map(f => `
+    <div class="feed-item ${f.type}">
+      <div class="fi-header">
+        <span class="fi-badge ${f.type}">${f.badge}</span>
+        <span class="fi-time">${f.time}</span>
+      </div>
+      <div class="fi-text">${f.text}</div>
+      <div class="fi-source">${f.source} · <a href="${f.url}" target="_blank">Verify Source &rarr;</a></div>
+    </div>`).join('');
+}
+
+function renderPolymarket(){
+  const panel = document.getElementById('panel-polymarket');
+  let html = '<div style="padding:8px 12px;font-size:9px;color:#3a6a7a;border-bottom:1px solid #0d1820;letter-spacing:1px">POLYMARKET PREDICTIONS · LIVE ODDS</div>';
+  polymarketData.forEach(p => {
+    html += `<div class="poly-item"><div class="poly-question">${p.question}</div>`;
+    p.options.forEach(o => {
+      const color = o.pct > 70 ? '#00cc66' : o.pct > 40 ? '#ffaa00' : '#ff5555';
+      html += `<div style="margin-bottom:4px">
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#6a8a9a;margin-bottom:2px"><span>${o.label}</span><span style="color:${color};font-weight:600">${o.pct}%</span></div>
+        <div class="poly-bar-wrap"><div class="poly-bar" style="width:${o.pct}%;background:linear-gradient(90deg,${color}44,${color})"></div></div>
+      </div>`;
+    });
+    html += `<div class="poly-meta"><span>${p.total}</span><a href="https://polymarket.com" target="_blank" style="color:#2a8aaa;text-decoration:none;font-size:9px">View on Polymarket &rarr;</a></div></div>`;
+  });
+  panel.innerHTML = html;
+}
+
+function renderFlightPanel(){
+  const panel = document.getElementById('panel-flights');
+  let html = '<div style="padding:8px 12px;font-size:9px;color:#3a6a7a;border-bottom:1px solid #0d1820;letter-spacing:1px">MILITARY FLIGHT RADAR · TRACKED AIRCRAFT</div>';
+  aircraft.forEach(a => {
+    html += `<div class="flight-item">
+      <span class="fl-icon">&#9992;</span>
+      <div class="fl-info"><div class="fl-callsign">${a.callsign}</div><div class="fl-route">${a.role}</div></div>
+      <div style="text-align:right"><div class="fl-type">${a.type}</div><div class="fl-alt">${a.alt}</div></div>
+    </div>`;
+  });
+  html += '<div style="padding:8px 12px;font-size:9px;color:#2a5a6a;border-top:1px solid #0d1820"><a href="https://www.flightradar24.com" target="_blank" style="color:#2a8aaa;text-decoration:none">Open FlightRadar24 &rarr;</a></div>';
+  panel.innerHTML = html;
+}
+
+function renderTrends(){
+  const panel = document.getElementById('panel-trends');
+  let html = '<div style="padding:8px 12px;font-size:9px;color:#3a6a7a;border-bottom:1px solid #0d1820;letter-spacing:1px">TRENDING POLITICAL · X/TWITTER</div>';
+  twitterTrends.forEach(t => {
+    html += `<div class="trend-item">
+      <div class="trend-rank">${t.rank} · Trending</div>
+      <div class="trend-topic">${t.topic}</div>
+      <div class="trend-count">${t.count} posts</div>
+      <div class="trend-context">${t.context}</div>
+    </div>`;
+  });
+  panel.innerHTML = html;
+}
+
+function renderEvents(){
+  const panel = document.getElementById('panel-events');
+  let html = '<div style="padding:8px 12px;font-size:9px;color:#3a6a7a;border-bottom:1px solid #0d1820;letter-spacing:1px">POLITICAL EVENTS · GLOBAL CALENDAR</div>';
+  politicalEvents.forEach(e => {
+    html += `<div class="event-item ${e.priority}">
+      <div class="ev-date">${e.date}</div>
+      <div class="ev-title">${e.title}</div>
+      <div class="ev-region">${e.region}</div>
+    </div>`;
+  });
+  panel.innerHTML = html;
+}
+
+// ===== TOGGLES =====
+function toggleConnections(){ showConnections=!showConnections; renderConnections(); document.getElementById('toggleConnections').classList.toggle('active',showConnections); }
+function toggleFlights(){ showFlights=!showFlights; renderFlights(); document.getElementById('toggleFlights').classList.toggle('active',showFlights); }
+function toggleStrikes(){ showStrikes=!showStrikes; renderStrikeZones(); document.getElementById('toggleStrikes').classList.toggle('active',showStrikes); }
+
+// ===== EVENT LISTENERS =====
+document.querySelectorAll('.filter-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.filter;
+    renderConflictList();
+  };
+});
+
+document.querySelectorAll('.map-style-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.map-style-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    map.removeLayer(currentTileLayer);
+    currentTileLayer = L.tileLayer(mapTiles[btn.dataset.style],{attribution:''}).addTo(map);
+  };
+});
+
+document.querySelectorAll('.right-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.right-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.right-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
+  };
+});
+
+// ===== CLOCK =====
+function updateClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = 'UTC '+now.toUTCString().split(' ')[4];
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ===== LIVE FEED UPDATES =====
+const liveUpdateTemplates = [
+  {type:"breaking",badge:"BREAKING",sources:["Reuters","AP News","BBC News","Al Jazeera"]},
+  {type:"alert",badge:"ALERT",sources:["Reuters","AFP","Al Arabiya","CNN"]},
+  {type:"update",badge:"UPDATE",sources:["Ukrinform","Kyiv Independent","ISW","General Staff UA"]},
+  {type:"intel",badge:"INTEL",sources:["OSINT","FlightRadar24","MarineTraffic","Bellingcat"]},
+];
+const liveMessages = [
+  "New explosions reported in Tehran. Anti-aircraft fire visible. Iranian state TV broadcasts Quran recitations.",
+  "Russian forces attempt breakthrough near Kostyantynivka-Druzhkivka. Ukrainian defense holds on 5 fronts.",
+  "Israeli jets spotted over Mediterranean heading east. IDF confirms continued operations.",
+  "CENTCOM reports additional Iranian ballistic missile launch detected. Patriot systems engaging.",
+  "European NATO allies raise alert levels. Belgium, Netherlands, France increase military readiness.",
+  "Houthi forces claim new attack on commercial shipping in Red Sea. Coalition naval response underway.",
+  "Ukrainian drone strikes ammunition depot in Russian-occupied Luhansk. Large fire reported.",
+  "RSF forces moving on last government-held positions in Darfur. Aid agencies losing access.",
+  "Myanmar resistance captures key border crossing. Junta forces retreat from northern positions.",
+  "IRGC statement: 'The most intense operation against Israel and the United States is set to begin.'",
+  "Sweden intercepts suspected Russian drone near military installation. NATO Article 5 discussions.",
+  "Romania scrambles jets after drone downed 100m from Romanian village on Danube.",
+  "Pakistan ISI reports movement on LoC. Indian Army on high alert along Kashmir border.",
+  "US Central Command moves additional Patriot batteries to Gulf states. Force protection enhanced.",
+  "Iran's Ali Larijani says interim committee will run country until Supreme Leader successor chosen.",
+];
+function addLiveUpdate(){
+  const template = liveUpdateTemplates[Math.floor(Math.random()*liveUpdateTemplates.length)];
+  const msg = liveMessages[Math.floor(Math.random()*liveMessages.length)];
+  const source = template.sources[Math.floor(Math.random()*template.sources.length)];
+  const panel = document.getElementById('panel-feed');
+  const div = document.createElement('div');
+  div.className = `feed-item ${template.type} new-item`;
+  div.innerHTML = `
+    <div class="fi-header"><span class="fi-badge ${template.type}">${template.badge}</span><span class="fi-time">Just now</span></div>
+    <div class="fi-text">${msg}</div>
+    <div class="fi-source">${source} · <a href="https://www.reuters.com" target="_blank">Verify Source &rarr;</a></div>`;
+  if(panel.firstChild) panel.firstChild.classList.remove('new-item');
+  panel.insertBefore(div, panel.firstChild);
+  if(panel.children.length > 30) panel.lastChild.remove();
+}
+setInterval(addLiveUpdate, 8000);
+
+// ===== INIT =====
+document.getElementById('toggleConnections').classList.add('active');
+document.getElementById('toggleFlights').classList.add('active');
+document.getElementById('toggleStrikes').classList.add('active');
+renderConflictList();
+renderMarkers();
+renderConnections();
+renderStrikeZones();
+renderFlights();
+renderFeed();
+renderPolymarket();
+renderFlightPanel();
+renderTrends();
+renderEvents();
+animateFlights();
+
+// Made by ZerohedgeQuantbyShrey
+console.log('%c GLOBAL CONFLICT MONITOR ', 'background:#0a1520;color:#ff3333;font-size:16px;font-weight:bold;padding:8px;border:2px solid #ff3333');
+console.log('%c Made by ZerohedgeQuantbyShrey ', 'color:#00ccff;font-size:12px');
+</script>
+</body>
+</html>
